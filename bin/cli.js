@@ -3,70 +3,85 @@ process.noDeprecation = true;
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import fs from 'fs';
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 
 const program = new Command();
 program
-  .command('create')
   .description('创建模版')
   .action(async () => {
-    // 命名项目
-    const { name } = await inquirer.prompt({
-      type: 'input',
-      name: 'name',
-      message: '请输入项目名称：',
-    });
-    const { isTs } = await inquirer.prompt({
-      type: 'list',
-      name: 'isTs',
-      message: '是否使用 TypeScript 语法？',
-      choices: ['否', '是'],
-    });
-    const { isRouter } = await inquirer.prompt({
-      type: 'list',
-      name: 'isRouter',
-      message: '是否引入 Vue Router 进行单页面应用开发？',
-      choices: ['否', '是'],
-    });
-    const { isApi } = await inquirer.prompt({
-      type: 'list',
-      name: 'isApi',
-      message: '是否启用 axios 接口请求？',
-      choices: ['否', '是'],
-    });
-    const { isUi } = await inquirer.prompt({
-      type: 'list',
-      name: 'isUi',
-      message: '是否启用 ui？',
-      choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
-    });
-    let isDeload;
-    if (isUi !== '否') {
-      const { isDeload: deloadAnswer } = await inquirer.prompt({
+    try {
+      // 命名项目
+      const { name } = await inquirer.prompt({
+        type: 'input',
+        name: 'name',
+        message: '请输入项目名称：',
+        default: 'vtems_project'
+      });
+      if (existsSync(`./${name}`)) {
+        // rmSync(`./${name}`, { recursive: true, force: true });
+        console.log('\x1b[1;33m' + `❌目录已存在` + '\x1b[0m');
+        process.exit(0)
+      }
+      const { isTs } = await inquirer.prompt({
         type: 'list',
-        name: 'isDeload',
-        message: 'ui是否按需加载？',
+        name: 'isTs',
+        message: '是否使用 TypeScript 语法？',
         choices: ['否', '是'],
       });
-      isDeload = deloadAnswer;
+      const { isRouter } = await inquirer.prompt({
+        type: 'list',
+        name: 'isRouter',
+        message: '是否引入 Vue Router 进行单页面应用开发？',
+        choices: ['否', '是'],
+      });
+      const { isApi } = await inquirer.prompt({
+        type: 'list',
+        name: 'isApi',
+        message: '是否启用 axios 接口请求？',
+        choices: ['否', '是'],
+      });
+      const { isUi } = await inquirer.prompt({
+        type: 'list',
+        name: 'isUi',
+        message: '是否启用 ui？',
+        choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
+      });
+      let isDeload;
+      if (isUi !== '否') {
+        const { isDeload: deloadAnswer } = await inquirer.prompt({
+          type: 'list',
+          name: 'isDeload',
+          message: 'ui是否按需加载？',
+          choices: ['否', '是'],
+        });
+        isDeload = deloadAnswer;
+      }
+      mkdirSync(`./${name}`, { recursive: true });
+      crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload);
+      crReadme(name);
+      crTsconfig(name, isTs, isRouter, isApi, isUi);
+      crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload);
+      crIndexHtml(name, isTs);
+      crEslintPrettierrc(name, isTs);
+      crGitignore(name);
+      crSrc(name, isTs, isRouter, isApi, isUi, isDeload);
+      crVscode(name);
+      crApi(name, isTs, isRouter, isApi, isUi);
+      console.log('正在初始化项目', process.cwd() + '\\' + name );
+      console.log('项目初始化完成，可执行以下命令：');
+      console.log('\x1b[1;32m' + `cd ${name}` + '\x1b[0m');
+      console.log('\x1b[1;32m' + `pnpm install` + '\x1b[0m');
+      console.log('\x1b[1;32m' + `pnpm dev` + '\x1b[0m');
+    } catch (e) {
+      // console.log(e,11, e.message.includes('closed'), inquirer.ExitPromptError)
+      if (e.message.includes('closed')) {
+        console.log('');
+        console.log('❌操作取消');
+        process.exit(0)
+      } else {
+        throw e;
+      }
     }
-    if (existsSync(`./${name}`)) rmSync(`./${name}`, { recursive: true, force: true });
-    mkdirSync(`./${name}`, { recursive: true });
-    crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload);
-    crReadme(name);
-    crTsconfig(name, isTs, isRouter, isApi, isUi);
-    crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload);
-    crIndexHtml(name, isTs);
-    crEslintPrettierrc(name, isTs);
-    crGitignore(name);
-    crSrc(name, isTs, isRouter, isApi, isUi, isDeload);
-    crVscode(name);
-    crApi(name, isTs, isRouter, isApi, isUi);
-    console.log('正在初始化项目');
-    console.log('项目初始化完成，可执行以下命令：');
-    console.log('cd', name);
-    console.log('pnpm install');
-    console.log('pnpm dev');
   });
 // 解析用户执行命令传入参数
 program.parse(process.argv);
