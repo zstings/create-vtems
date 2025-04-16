@@ -1,0 +1,102 @@
+import axios, { AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
+<ui@1>
+<route@1>
+
+export interface AppRequestConfig extends AxiosRequestConfig {
+  // 设置为false，则不会在错误时自动显示错误提示
+  showError?: boolean;
+  // 返回原数据
+  returnResponse?: boolean;
+  // 无需token
+  noToken?: boolean;
+  // 200 下是否显示提示消息
+  showMsg?: boolean;
+}
+export interface ResData<T = any> {
+  code: number;
+  data: T;
+  msg: string;
+}
+export interface ParamsData {
+  [key: string]: any;
+}
+
+interface AppInternalAxiosRequestConfig extends AppRequestConfig {
+  headers: AxiosRequestHeaders;
+}
+
+interface AppAxiosResponse<T = any> extends AxiosResponse<T> {
+  config: AppInternalAxiosRequestConfig;
+}
+
+const https = axios.create({
+  baseURL: import.meta.env.VITE_APP_API,
+  timeout: 20000,
+});
+
+https.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+
+
+// 添加请求拦截器
+https.interceptors.request.use(
+  (config: AppInternalAxiosRequestConfig) => {
+    // 处理token
+    if (!config.noToken) {
+      if (config.method == 'get') {
+        if (config.params == undefined) config.params = {};
+        if (localStorage.token) config.params.token = localStorage.getItem('token');
+      }
+      if (config.method == 'post') {
+        if (config.data == undefined) config.data = {};
+        if (localStorage.token) config.data.token = localStorage.getItem('token');
+      }
+    }
+    return config;
+  },
+  error => {
+    // 对请求错误做些什么
+    return Promise.reject(error);
+  },
+);
+
+// 添加响应拦截器
+https.interceptors.response.use(
+  (response: AppAxiosResponse<ResData>) => {
+    // response.data 为接口直接返回的信息，这个信息不包含http状态信息
+    const { config, data: resData } = response;
+    const { code, data, msg } = resData;
+    // 返回信息类型为blob，或者code字段不存在，直接返回原始数据，忽略一切自定义参数，如returnResponse、showError等
+    if (response.config.responseType == 'blob' || !('code' in resData)) return resData;
+    // 如果code为400， 直接跳转到登录
+    if (code == 400) return <route@2>;
+    // 如果code不为200, 将返回信息已错误形式输出到catch里，接口可以使用catch接收
+    // 如果returnResponse被设置为true, 会跳过此处验证，code非200不在视为错误信息。此时，showError 会直接无效
+    if (code != 200 && !config.returnResponse) {
+      // showError 为自定义参数，类型boolean，默认不存在，即undefined，除非显式设置为false关闭，其他一律显示
+      if (config.showError != false) <ui@2>;
+      return Promise.reject(new Error(msg, { cause: resData }));
+    }
+    if (!config.returnResponse && config.showMsg) <ui@2>;
+    // 根据returnResponse返回信息
+    return config.returnResponse ? resData : data;
+  },
+  error => {
+    return Promise.reject(error);
+  },
+);
+
+export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>;
+export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>;
+export function Get<T = any>(url: string, params?: Record<string, any>, config?: AppRequestConfig): Promise<T>;
+export function Get<T = any>(url: string, params: Record<string, any> = {}, config: AppRequestConfig = {}) {
+  config.params = params;
+  return https.request<null, T>({ method: 'get', url, ...config });
+}
+
+export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>;
+export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>;
+export function Post<T = any>(url: string, data?: Record<string, any>, config?: AppRequestConfig): Promise<T>;
+export function Post<T = ResData>(url: string, data: Record<string, any> = {}, config: AppRequestConfig = {}) {
+  config.data = data;
+  return https.request<null, T>({ method: 'post', url, ...config });
+}

@@ -1,15 +1,16 @@
 {
   "name": "create-vtems",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "快速创建vue项目模板",
   "main": "index.js",
-	"type": "module",
+  "type": "module",
   "bin": {
     "vtems": "bin/cli.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "inquirer": "^12.1.0"
+    "inquirer": "^12.1.0",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {},
   "scripts": {

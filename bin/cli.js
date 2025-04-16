@@ -3,89 +3,100 @@ process.noDeprecation = true;
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import fs from 'fs';
+import typescript from 'typescript';
 import { existsSync, mkdirSync } from 'node:fs';
-
+import { dirname } from 'node:path';
+const ml = dirname(process.argv[1]);
 const program = new Command();
-program
-  .description('创建模版')
-  .action(async () => {
-    try {
-      // 命名项目
-      const { name } = await inquirer.prompt({
-        type: 'input',
-        name: 'name',
-        message: '请输入项目名称：',
-        default: 'vtems_project'
-      });
-      if (existsSync(`./${name}`)) {
-        // rmSync(`./${name}`, { recursive: true, force: true });
-        console.log('\x1b[1;33m' + `❌目录已存在` + '\x1b[0m');
-        process.exit(0)
-      }
-      const { isTs } = await inquirer.prompt({
-        type: 'list',
-        name: 'isTs',
-        message: '是否使用 TypeScript 语法？',
-        choices: ['否', '是'],
-      });
-      const { isRouter } = await inquirer.prompt({
-        type: 'list',
-        name: 'isRouter',
-        message: '是否引入 Vue Router 进行单页面应用开发？',
-        choices: ['否', '是'],
-      });
-      const { isApi } = await inquirer.prompt({
-        type: 'list',
-        name: 'isApi',
-        message: '是否启用 axios 接口请求？',
-        choices: ['否', '是'],
-      });
-      const { isUi } = await inquirer.prompt({
-        type: 'list',
-        name: 'isUi',
-        message: '是否启用 ui？',
-        choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
-      });
-      let isDeload;
-      if (isUi !== '否') {
-        const { isDeload: deloadAnswer } = await inquirer.prompt({
-          type: 'list',
-          name: 'isDeload',
-          message: 'ui是否按需加载？',
-          choices: ['否', '是'],
-        });
-        isDeload = deloadAnswer;
-      }
-      mkdirSync(`./${name}`, { recursive: true });
-      crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload);
-      crReadme(name);
-      crTsconfig(name, isTs, isRouter, isApi, isUi);
-      crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload);
-      crIndexHtml(name, isTs);
-      crEslintPrettierrc(name, isTs);
-      crGitignore(name);
-      crSrc(name, isTs, isRouter, isApi, isUi, isDeload);
-      crVscode(name);
-      crApi(name, isTs, isRouter, isApi, isUi);
-      console.log('正在初始化项目', process.cwd() + '\\' + name );
-      console.log('项目初始化完成，可执行以下命令：');
-      console.log('\x1b[1;32m' + `cd ${name}` + '\x1b[0m');
-      console.log('\x1b[1;32m' + `pnpm install` + '\x1b[0m');
-      console.log('\x1b[1;32m' + `pnpm dev` + '\x1b[0m');
-    } catch (e) {
-      // console.log(e,11, e.message.includes('closed'), inquirer.ExitPromptError)
-      if (e.message.includes('closed')) {
-        console.log('');
-        console.log('❌操作取消');
-        process.exit(0)
-      } else {
-        throw e;
-      }
+program.description('创建模版').action(async () => {
+  try {
+    // 命名项目
+    const { name } = await inquirer.prompt({
+      type: 'input',
+      name: 'name',
+      message: '请输入项目名称：',
+      default: 'vtems_project',
+    });
+    if (existsSync(`./${name}`)) {
+      // rmSync(`./${name}`, { recursive: true, force: true });
+      console.log('\x1b[1;33m' + `❌目录已存在` + '\x1b[0m');
+      process.exit(0);
     }
-  });
+    const { isTs } = await inquirer.prompt({
+      type: 'list',
+      name: 'isTs',
+      message: '是否使用 TypeScript 语法？',
+      choices: ['否', '是'],
+    });
+    const { isRouter } = await inquirer.prompt({
+      type: 'list',
+      name: 'isRouter',
+      message: '是否引入 Vue Router 进行单页面应用开发？',
+      choices: ['否', '是'],
+    });
+    const { isApi } = await inquirer.prompt({
+      type: 'list',
+      name: 'isApi',
+      message: '是否启用 axios 接口请求？',
+      choices: ['否', '是'],
+    });
+    const { isUi } = await inquirer.prompt({
+      type: 'list',
+      name: 'isUi',
+      message: '是否启用 ui？',
+      choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
+    });
+    let isDeload;
+    if (isUi !== '否') {
+      const { isDeload: deloadAnswer } = await inquirer.prompt({
+        type: 'list',
+        name: 'isDeload',
+        message: 'ui是否按需加载？',
+        choices: ['否', '是'],
+      });
+      isDeload = deloadAnswer;
+    }
+    // 创建目录
+    mkdirSync(`./${name}`, { recursive: true });
+    // 创建vite.config
+    crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload);
+    // 创建README
+    crReadme(name);
+    // 创建ts.config
+    crTsconfig(name, isTs, isRouter, isApi, isUi);
+    // 创建package.json
+    crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload);
+    // 创建index.html
+    crIndexHtml(name, isTs);
+    // 创建Eslint 、 Prettierrc
+    crEslintPrettierrc(name, isTs);
+    // 创建gitignore
+    crGitignore(name);
+    // 创建src
+    crSrc(name, isTs, isRouter, isApi, isUi, isDeload);
+    // 创建vscode
+    crVscode(name);
+    // 创建api
+    crApi(name, isTs, isRouter, isApi, isUi);
+    console.log('正在初始化项目', process.cwd() + '\\' + name);
+    console.log('项目初始化完成，可执行以下命令：');
+    console.log('\x1b[1;32m' + `cd ${name}` + '\x1b[0m');
+    console.log('\x1b[1;32m' + `pnpm install` + '\x1b[0m');
+    console.log('\x1b[1;32m' + `pnpm dev` + '\x1b[0m');
+  } catch (e) {
+    // console.log(e,11, e.message.includes('closed'), inquirer.ExitPromptError)
+    if (e.message.includes('closed')) {
+      console.log('');
+      console.log('❌操作取消');
+      process.exit(0);
+    } else {
+      throw e;
+    }
+  }
+});
 // 解析用户执行命令传入参数
 program.parse(process.argv);
-
+// 创建vite.config
 function crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload) {
   isDeload = isDeload == '是';
   const str = `import { fileURLToPath, URL } from 'node:url'
@@ -98,14 +109,11 @@ ${
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'`
     : isUi == '@arco-design/web-vue' && isDeload
+    ? `import { vitePluginForArco } from '@arco-plugins/vite-vue'`
+    : isUi == 'vant' && isDeload
     ? `import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import { ArcoResolver } from 'unplugin-vue-components/resolvers'
-    `
-    : isUi == 'vant' && isDeload
-    ? `import AutoImport from 'unplugin-auto-import/rspack'
-import Components from 'unplugin-vue-components/rspack'
-import { VantResolver } from 'unplugin-vue-components/resolvers'`
+import { VantResolver } from '@vant/auto-import-resolver';`
     : ''
 }
 
@@ -123,15 +131,8 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()],
     }),`
         : isUi == '@arco-design/web-vue' && isDeload
-        ? `AutoImport({
-      resolvers: [ArcoResolver()],
-    }),
-    Components({
-      resolvers: [
-        ArcoResolver({
-          sideEffect: true
-        })
-      ]
+        ? `vitePluginForArco({
+      style: 'css'
     }),`
         : isUi == 'vant' && isDeload
         ? `AutoImport({
@@ -161,6 +162,7 @@ export default defineConfig({
 })`;
   fs.writeFileSync(`./${name}/vite.config.${isTs == '是' ? 'ts' : 'js'}`, str, 'utf-8');
 }
+// 创建README
 function crReadme(name, isTs) {
   const str = `## Project Setup
 
@@ -188,6 +190,7 @@ pnpm lint
 `;
   fs.writeFileSync(`./${name}/README.md`, str, 'utf-8');
 }
+// 创建ts.config
 function crTsconfig(name, isTs, isRouter, isApi, isUi) {
   if (isTs == '是') {
     fs.writeFileSync(
@@ -262,6 +265,7 @@ function crTsconfig(name, isTs, isRouter, isApi, isUi) {
     );
   }
 }
+// 创建package.json
 function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload) {
   isTs = isTs == '是';
   isRouter = isRouter == '是';
@@ -269,69 +273,75 @@ function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload) {
   isDeload = isDeload == '是';
   const packagejson = {
     name: name,
-    version: '0.0.0',
+    version: '1.0.0',
     private: true,
     type: 'module',
     scripts: {
       dev: 'vite',
       build: 'vite build',
       preview: 'vite preview',
-      'build-only': 'vite build',
-      lint: 'eslint . --fix',
+      'lint:oxlint': 'oxlint . --fix -D correctness --ignore-path .gitignore',
+      'lint:eslint': 'eslint . --fix',
+      lint: 'run-s lint:*',
       format: 'prettier --write src/',
     },
     dependencies: {
-      vue: '^3.5.12',
+      vue: '^3.5.13',
       '@zstings/utils': '^0.8.0',
     },
     devDependencies: {
-      '@vitejs/plugin-vue': '^5.1.4',
-      '@vue/eslint-config-prettier': '^10.1.0',
-      eslint: '^9.14.0',
-      'eslint-plugin-vue': '^9.30.0',
-      prettier: '^3.3.3',
-      vite: '^5.4.10',
-      'vite-plugin-vue-devtools': '^7.5.4',
+      '@vitejs/plugin-vue': '^5.2.3',
+      '@vue/eslint-config-prettier': '^10.2.0',
+      eslint: '^9.22.0',
+      'eslint-plugin-oxlint': '^0.16.0',
+      'eslint-plugin-vue': '~10.0.0',
+      'npm-run-all2': '^7.0.2',
+      oxlint: '^0.16.0',
+      prettier: '^3.5.3',
+      vite: '^6.2.4',
+      'vite-plugin-vue-devtools': '^7.7.2',
     },
   };
-  if (isRouter) packagejson.dependencies['vue-router'] = '^4.4.5';
+  if (isRouter) packagejson.dependencies['vue-router'] = '^4.5.0';
   if (isApi) packagejson.dependencies['axios'] = '^1.7.8';
   if (isUi != '否') {
     if (isUi == 'element-plus') {
-      packagejson.dependencies[isUi] = '^2.8.8';
+      packagejson.dependencies[isUi] = '^2.9.7';
       if (isDeload) {
-        packagejson.devDependencies['unplugin-vue-components'] = '^0.27.4';
-        packagejson.devDependencies['unplugin-auto-import'] = '^0.18.5';
+        packagejson.devDependencies['unplugin-vue-components'] = '^28.5.0';
+        packagejson.devDependencies['unplugin-auto-import'] = '^19.1.2';
       }
     }
     if (isUi == '@arco-design/web-vue') {
       packagejson.dependencies[isUi] = '^2.56.0';
       if (isDeload) {
-        packagejson.devDependencies['unplugin-vue-components'] = '^0.27.4';
-        packagejson.devDependencies['unplugin-auto-import'] = '^0.18.5';
+        packagejson.devDependencies['@arco-plugins/vite-vue'] = '^1.4.5';
       }
     }
     if (isUi == 'vant') {
-      packagejson.dependencies[isUi] = '^4.9.6';
+      packagejson.dependencies[isUi] = '^4.9.18';
       if (isDeload) {
-        packagejson.devDependencies['unplugin-vue-components'] = '^0.27.4';
-        packagejson.devDependencies['unplugin-auto-import'] = '^0.18.5';
+        packagejson.devDependencies['unplugin-vue-components'] = '^28.5.0';
+        packagejson.devDependencies['unplugin-auto-import'] = '^19.1.2';
+        packagejson.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
       }
     }
   }
   if (isTs) {
+    packagejson.scripts['type-check'] = 'vue-tsc --build';
     packagejson.devDependencies['@tsconfig/node22'] = '^22.0.0';
     packagejson.devDependencies['@types/node'] = '^22.9.0';
-    packagejson.devDependencies['@vue/eslint-config-typescript'] = '^14.1.3';
-    packagejson.devDependencies['@vue/tsconfig'] = '^0.5.1';
-    packagejson.devDependencies['npm-run-all2'] = '^7.0.1';
-    packagejson.devDependencies['typescript'] = '~5.6.3';
-    packagejson.devDependencies['vue-tsc'] = '^2.1.10';
+    packagejson.devDependencies['@vue/eslint-config-typescript'] = '^14.5.0';
+    packagejson.devDependencies['@vue/tsconfig'] = '^0.7.0';
+    packagejson.devDependencies['typescript'] = '~5.8.0';
+    packagejson.devDependencies['vue-tsc'] = '^2.2.8';
   } else {
-    packagejson.devDependencies['@eslint/js'] = '^9.14.0';
+    packagejson.devDependencies['@eslint/js'] = '^9.22.0';
+    packagejson.devDependencies['globals'] = '^16.0.0';
   }
   fs.writeFileSync(`./${name}/package.json`, JSON.stringify(packagejson, null, 2), 'utf-8');
 }
+// 创建index.html
 function crIndexHtml(name, isTs) {
   isTs = isTs == '是';
   fs.writeFileSync(
@@ -342,7 +352,7 @@ function crIndexHtml(name, isTs) {
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HHH</title>
+    <title>${name}</title>
   </head>
   <body>
     <div id="app"></div>
@@ -352,48 +362,95 @@ function crIndexHtml(name, isTs) {
     'utf-8',
   );
 }
+// 创建Eslint 、 Prettierrc
 function crEslintPrettierrc(name, isTs) {
   isTs = isTs == '是';
   fs.writeFileSync(
     `./${name}/eslint.config.js`,
-    `import pluginVue from 'eslint-plugin-vue'
-${isTs ? `import vueTsEslintConfig from '@vue/eslint-config-typescript'` : `import js from '@eslint/js'`}
+    `${isTs ? `import { globalIgnores } from 'eslint/config'` : `import { defineConfig, globalIgnores } from 'eslint/config'`}
+import pluginVue from 'eslint-plugin-vue'
+import pluginOxlint from 'eslint-plugin-oxlint'
 import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+${isTs ? `import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'` : `import globals from 'globals'\nimport js from '@eslint/js'`}
 
-export default [
+${
+  isTs
+    ? `
+// To allow more languages other than \`ts\` in \`.vue\` files, uncomment the following lines:
+// import { configureVueProject } from '@vue/eslint-config-typescript'
+// configureVueProject({ scriptLangs: ['ts', 'tsx'] })
+// More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
+
+export default defineConfigWithVueTs(
   {
     name: 'app/files-to-lint',
-    files: ['**/*.{${isTs ? `ts,mts,tsx` : `js,mjs,jsx`},vue}'],
+    files: ['**/*.{ts,mts,tsx,vue}'],
   },
 
-  {
-    name: 'app/files-to-ignore',
-    ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
-  },
-  
-  ${isTs ? '' : `js.configs.recommended,`}
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+
+  // pluginVue.configs['flat/essential'],
   {
     ...pluginVue.configs['flat/essential'],
     rules: {
       'vue/multi-word-component-names': 'off',
     },
   },
-  ${isTs ? '...vueTsEslintConfig(),' : ''}
+  vueTsConfigs.recommended,
+  ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
-]`,
+)
+  `
+    : `
+export default defineConfig([
+  {
+    name: 'app/files-to-lint',
+    files: ['**/*.{js,mjs,jsx,vue}'],
+  },
+
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+
+  js.configs.recommended,
+  ...pluginVue.configs['flat/essential'],
+  ...pluginOxlint.configs['flat/recommended'],
+  skipFormatting,
+])
+  `
+}
+`,
     'utf-8',
   );
   fs.writeFileSync(
     `./${name}/.prettierrc.json`,
-    `{
-  "$schema": "https://json.schemastore.org/prettierrc",
-  "semi": false,
-  "singleQuote": true,
-  "printWidth": 280
-}`,
+    JSON.stringify(
+      {
+        $schema: 'https://json.schemastore.org/prettierrc',
+        arrowParens: 'avoid',
+        bracketSpacing: true,
+        endOfLine: 'auto',
+        printWidth: 250,
+        semi: true,
+        singleQuote: true,
+        tabWidth: 2,
+        trailingComma: 'all',
+        jsxSingleQuote: true,
+        bracketSameLine: true,
+      },
+      null,
+      2,
+    ),
     'utf-8',
   );
 }
+// 创建gitignore
 function crGitignore(name) {
   fs.writeFileSync(
     `./${name}/.gitignore`,
@@ -432,16 +489,21 @@ coverage
   );
   fs.writeFileSync(
     `./${name}/.editorconfig`,
-    `[*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue}]
+    `[*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,css,scss,sass,less,styl}]
 charset = utf-8
 indent_size = 2
 indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+end_of_line = lf
+max_line_length = 100
 `,
     'utf-8',
   );
+  fs.writeFileSync(`./${name}/.gitattributes`, `* text=auto eol=lf`, 'utf-8');
 }
+// 创建src
 function crSrc(name, isTs, isRouter, isApi, isUi, isDeload) {
   isTs = isTs == '是';
   isDeload = isDeload == '是';
@@ -449,7 +511,7 @@ function crSrc(name, isTs, isRouter, isApi, isUi, isDeload) {
   mkdirSync(`./${name}/src/components`, { recursive: true });
   fs.writeFileSync(
     `./${name}/src/App.vue`,
-    `<script setup lang="ts">
+    `<script setup${isTs ? ' lang="ts"' : ''}>
 import HelloWorld from './components/HelloWorld.vue'
 </script>
 
@@ -487,7 +549,6 @@ header {
   fs.writeFileSync(
     `./${name}/src/main.${isTs ? 'ts' : 'js'}`,
     `import './assets/main.css'
-
 import { createApp } from 'vue'
 import App from './App.vue'
 ${
@@ -629,95 +690,45 @@ export default router`,
     fs.writeFileSync(`./${name}/src/views/HomeView.vue`, `<template>HomeView</template>`, 'utf-8');
   }
 }
+// 创建vscode
 function crVscode(name, isTs) {
   isTs = isTs == '是';
   mkdirSync(`./${name}/.vscode`, { recursive: true });
   fs.writeFileSync(
     `./${name}/.vscode/extensions.json`,
-    `{
-  "recommendations": [
-    "Vue.volar",
-    "dbaeumer.vscode-eslint",
-    "EditorConfig.EditorConfig",
-    "esbenp.prettier-vscode"
-  ]
-}`,
+    JSON.stringify(
+      {
+        recommendations: ['Vue.volar', 'dbaeumer.vscode-eslint', 'EditorConfig.EditorConfig', 'oxc.oxc-vscode', 'esbenp.prettier-vscode'],
+      },
+      null,
+      2,
+    ),
     'utf-8',
   );
   fs.writeFileSync(
     `./${name}/.vscode/settings.json`,
-    `{
-  "explorer.fileNesting.enabled": true,
-  "explorer.fileNesting.patterns": {
-    "tsconfig.json": "tsconfig.*.json, env.d.ts",
-    "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
-    "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .prettier*, prettier*, .editorconfig"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-  },
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
-}
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/assets/logo.svg`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 261.76 226.69"><path d="M161.096.001l-30.225 52.351L100.647.001H-.005l130.877 226.688L261.749.001z" fill="#41b883"/><path d="M161.096.001l-30.225 52.351L100.647.001H52.346l78.526 136.01L209.398.001z" fill="#34495e"/></svg>`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/components/HelloWorld.vue`,
-    `${
-      isTs
-        ? `<script setup lang="ts">
-defineProps<{
-  msg: string
-}>()
-</script>`
-        : `<script setup>
-defineProps({
-  msg: {
-    type: String,
-    required: true,
-  },
-})
-</script>`
-    }
-
-<template>
-  <div class="greetings">
-    <h1 class="green">{{ msg }}</h1>
-    <h3>
-      You’ve successfully created a project with
-      <a href="https://vite.dev/" target="_blank" rel="noopener">Vite</a> +
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue 3</a>.
-    </h3>
-  </div>
-</template>
-
-<style scoped>
-h1 {
-  font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
-}
-
-h3 {
-  font-size: 1.2rem;
-}
-
-.greetings h1,
-.greetings h3 {
-  text-align: center;
-}
-</style>
-`,
+    JSON.stringify(
+      {
+        'explorer.fileNesting.enabled': true,
+        'explorer.fileNesting.patterns': {
+          'tsconfig.json': 'tsconfig.*.json, env.d.ts',
+          'vite.config.*': 'jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*',
+          'package.json': 'package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .prettier*, prettier*, .editorconfig',
+        },
+        'editor.codeActionsOnSave': {
+          'source.fixAll': 'explicit',
+        },
+        'editor.formatOnSave': true,
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+        'prettier.configPath': './.prettierrc.json',
+      },
+      null,
+      2,
+    ),
     'utf-8',
   );
 }
+// 创建api
 function crApi(name, isTs, isRouter, isApi, isUi) {
   isTs = isTs == '是';
   isApi = isApi == '是';
@@ -726,165 +737,26 @@ function crApi(name, isTs, isRouter, isApi, isUi) {
   if (!isApi) return;
   mkdirSync(`./${name}/src/api`, { recursive: true });
   mkdirSync(`./${name}/src/https`, { recursive: true });
-  fs.writeFileSync(
-    `./${name}/src/api/index.${isTs ? 'ts' : 'js'}`,
-    `import { Post, Get${isTs ? ', AppRequestConfig' : ''} } from '../https'
+  let apiStr = fs.readFileSync(`${ml}/api.txt`, 'utf-8');
+  if (!isTs) apiStr = tsTojs(apiStr);
+  fs.writeFileSync(`./${name}/src/api/index.${isTs ? 'ts' : 'js'}`, apiStr, 'utf-8');
 
-export function api1() {
-  return Get<{ qiniu_token${isTs ? ': string' : ''} }>('https://api.testurl.com/get_token', {}, {})
-}
-export function api2() {
-  return Post<{ qiniu_token${isTs ? ': string' : ''} }>('https://api.testurl.com/get_token', {}, {})
-}`,
-    'utf-8',
+  let httpStr = fs.readFileSync(`${ml}/https.txt`, 'utf-8');
+  httpStr = httpStr.replaceAll(
+    '<ui@1>',
+    isUi == 'element-plus' ? `import { ElMessage } from 'element-plus'` : isUi == '@arco-design/web-vue' ? `import { Message } from '@arco-design/web-vue';` : isUi == 'vant' ? `import { showToast } from 'vant';` : '',
   );
-  fs.writeFileSync(
-    `./${name}/src/https/index.${isTs ? 'ts' : 'js'}`,
-    `import axios, { AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios'
-${isUi == 'element-plus' ? `import { ElMessage } from 'element-plus'` : isUi == '@arco-design/web-vue' ? `import { Message } from '@arco-design/web-vue';` : isUi == 'vant' ? `import { showToast } from 'vant';` : ''}
-${isRouter ? `import router from '@/router'` : ''}
-
-${
-  isTs
-    ? `
-export interface AppRequestConfig extends AxiosRequestConfig {
-  // 设置为false，则不会在错误时自动显示错误提示
-  showError?: boolean
-  // 返回原数据
-  returnResponse?: boolean
-  // 无需token
-  noToken?: boolean
-  // 200 下是否显示提示消息
-  showMsg?: boolean
+  httpStr = httpStr.replaceAll('<route@1>', isRouter ? `import router from '@/router'` : '');
+  httpStr = httpStr.replaceAll('<route@2>', isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`);
+  httpStr = httpStr.replaceAll('<ui@2>', isUi == 'element-plus' ? `ElMessage.error(msg)` : isUi == '@arco-design/web-vue' ? `Message.error(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)');
+  if (!isTs) httpStr = tsTojs(httpStr);
+  fs.writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
 }
-
-interface AppInternalAxiosRequestConfig extends AppRequestConfig {
-  headers: AxiosRequestHeaders
-}
-
-interface AppAxiosResponse<T = any> extends AxiosResponse<T> {
-  config: AppInternalAxiosRequestConfig
-}`
-    : ''
-}
-
-const https = axios.create({
-  baseURL: import.meta.env.VITE_APP_API,
-  timeout: 20000,
-})
-
-https.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-
-let requestNum = 0
-// 添加请求拦截器
-https.interceptors.request.use(
-  (config${isTs ? ': AppInternalAxiosRequestConfig' : ''}) => {
-    // 处理全局加载
-    loadingCom('request')
-    // 处理token
-    if (!config.noToken) {
-      if (config.method == 'get') {
-        if (config.params == undefined) config.params = {}
-        if (localStorage.token) config.params.token = localStorage.getItem('token')
-      }
-      if (config.method == 'post') {
-        if (config.data == undefined) config.data = {}
-        if (localStorage.token) config.data.token = localStorage.getItem('token')
-      }
-    }
-    return config
-  },
-  error => {
-    // 对请求错误做些什么
-    return Promise.reject(error)
-  },
-)
-
-// 添加响应拦截器
-https.interceptors.response.use(
-  (response${isTs ? ': AppAxiosResponse<ResData>' : ''}) => {
-    loadingCom('response')
-    // response.data 为接口直接返回的信息，这个信息不包含http状态信息
-    // eslint-disable-next-line prettier/prettier
-    const { config, data: resData, data: { code, data, msg } } = response
-    // 返回信息类型为blob，或者code字段不存在，直接返回原始数据，忽略一切自定义参数，如returnResponse、showError等
-    if (response.config.responseType == 'blob' || !('code' in resData)) return resData
-    // 如果code为400， 直接跳转到登录
-    if (code == 400) return ${isRouter ? `router.push({ name: 'login' })` : ''}
-    // 如果code不为200, 将返回信息已错误形式输出到catch里，接口可以使用catch接收
-    // 如果returnResponse被设置为true, 会跳过此处验证，code非200不在视为错误信息。此时，showError 会直接无效
-    if (code != 200 && !config.returnResponse) {
-      // showError 为自定义参数，类型boolean，默认不存在，即undefined，除非显式设置为false关闭，其他一律显示
-      if (config.showError != false) ${isUi == 'element-plus' ? `ElMessage.error(msg)` : isUi == '@arco-design/web-vue' ? `Message.error(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)'}
-      return Promise.reject(new Error(msg, { cause: resData }))
-    }
-    if (!config.returnResponse && config.showMsg) ${isUi == 'element-plus' ? `ElMessage.success(msg)` : isUi == '@arco-design/web-vue' ? `Message.success(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)'}
-    // 根据returnResponse返回信息
-    return config.returnResponse ? resData : data
-  },
-  error => {
-    loadingCom('response')
-    return Promise.reject(error)
-  },
-)
-
-function loadingCom(type${isTs ? ': string' : ''}) {
-  if (type == 'request') {
-    requestNum += 1
-    if (requestNum == 1) loadingStatus()
-  }
-  if (type == 'response') {
-    requestNum -= 1
-    if (requestNum == 0) loadingEnd()
-  }
-}
-
-function loadingStatus() {
-  // console.log(1)
-}
-
-function loadingEnd() {
-  // console.log(1)
-}
-${
-  isTs
-    ? `
-export interface ResData<T = any> {
-  code: number
-  data: T
-  msg: string
-}
-
-export interface ParamsData {
-  [key: string]: any
-}`
-    : ''
-}
-
-${
-  isTs
-    ? `export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>
-export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>
-export function Get<T = any>(url: string, params?: Record<string, any>, config?: AppRequestConfig): Promise<T>
-export function Get<T = any>(url: string, params: Record<string, any> = {}, config: AppRequestConfig = {}) {`
-    : 'export function Get(url, params = {}, config = {}) {'
-}
-  config.params = params
-  return https.request${isTs ? '<null, T>' : ''}({ method: 'get', url, ...config })
-}
-
-${
-  isTs
-    ? `export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>
-export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>
-export function Post<T = any>(url: string, data?: Record<string, any>, config?: AppRequestConfig): Promise<T>
-export function Post<T = ResData>(url: string, data: Record<string, any> = {}, config: AppRequestConfig = {}) {`
-    : 'export function Post(url, data = {}, config = {}) {'
-}
-  config.data = data
-  return https.request${isTs ? '<null, T>' : ''}({ method: 'post', url, ...config })
-}
-`,
-    'utf-8',
-  );
+function tsTojs(str) {
+  typescript.transpileModule(str, {
+    compilerOptions: {
+      module: typescript.ModuleKind.ESNext,
+      target: typescript.ScriptTarget.ESNext,
+    },
+  }).outputText;
 }
