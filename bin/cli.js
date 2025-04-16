@@ -739,11 +739,11 @@ function crVscode(name, isTs) {
   );
 }
 // 创建api
-function crApi(name, isTs, isRouter, isApi, isUi) {
+function crApi(name, isTs, isRouter, isApi, isUi, isDeload) {
   isTs = isTs == '是';
   isApi = isApi == '是';
   isRouter = isRouter == '是';
-  const isUis = isUi != '否';
+  isDeload = isDeload == '是';
   if (!isApi) return;
   mkdirSync(`./${name}/src/api`, { recursive: true });
   mkdirSync(`./${name}/src/https`, { recursive: true });
@@ -754,7 +754,13 @@ function crApi(name, isTs, isRouter, isApi, isUi) {
   let httpStr = fs.readFileSync(`${ml}/https.txt`, 'utf-8');
   httpStr = httpStr.replaceAll(
     '<ui@1>',
-    isUi == 'element-plus' ? `import { ElMessage } from 'element-plus'` : isUi == '@arco-design/web-vue' ? `import { Message } from '@arco-design/web-vue';` : isUi == 'vant' ? `import { showToast } from 'vant';` : '',
+    isUi && !isDeload == 'element-plus'
+      ? `import { ElMessage } from 'element-plus'`
+      : isUi && !isDeload == '@arco-design/web-vue'
+      ? `import { Message } from '@arco-design/web-vue';`
+      : isUi && !isDeload == 'vant'
+      ? `import { showToast } from 'vant';`
+      : '',
   );
   httpStr = httpStr.replaceAll('<route@1>', isRouter ? `import router from '@/router'` : '');
   httpStr = httpStr.replaceAll('<route@2>', isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`);
