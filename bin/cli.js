@@ -220,7 +220,7 @@ function crTsconfig(name, isTs, isRouter, isApi, isUi) {
       `./${name}/tsconfig.app.json`,
       `{
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "auto-imports.d.ts", "src/**/*.d.ts"],
+  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "auto-imports.d.ts", "components.d.ts", "src/**/*.d.ts"],
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
@@ -485,6 +485,10 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Auto-generated TypeScript declaration files
+auto-imports.d.ts
+components.d.ts
 `,
     'utf-8',
   );
