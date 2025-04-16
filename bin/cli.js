@@ -202,10 +202,10 @@ function crTsconfig(name, isTs, isRouter, isApi, isUi) {
     "vitest.config.*",
     "cypress.config.*",
     "nightwatch.conf.*",
-    "playwright.config.*"
+    "playwright.config.*",
+    "eslint.config.*"
   ],
   "compilerOptions": {
-    "composite": true,
     "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
 
@@ -220,16 +220,17 @@ function crTsconfig(name, isTs, isRouter, isApi, isUi) {
       `./${name}/tsconfig.app.json`,
       `{
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
+  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "auto-imports.d.ts", "src/**/*.d.ts"],
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
-    "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     ${isUi == 'element-plus' ? '"types": ["element-plus/global"],' : ''}
     "baseUrl": ".",
+    "module": "ESNext",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"]
   }
 }`,
       'utf-8',
@@ -698,7 +699,7 @@ function crVscode(name, isTs) {
     `./${name}/.vscode/extensions.json`,
     JSON.stringify(
       {
-        recommendations: ['Vue.volar', 'dbaeumer.vscode-eslint', 'EditorConfig.EditorConfig', 'oxc.oxc-vscode', 'esbenp.prettier-vscode'],
+        recommendations: ['Vue.volar', 'dbaeumer.vscode-eslint', 'EditorConfig.EditorConfig', 'oxc.oxc-vscode', 'esbenp.prettier-vscode', 'ecmel.vscode-html-css'],
       },
       null,
       2,
@@ -721,6 +722,11 @@ function crVscode(name, isTs) {
         'editor.formatOnSave': true,
         'editor.defaultFormatter': 'esbenp.prettier-vscode',
         'prettier.configPath': './.prettierrc.json',
+        '[html]': {
+          'editor.defaultFormatter': 'esbenp.prettier-vscode',
+        },
+        // 插件HTML CSS Support -> 建议的本地或远程样式表列表。
+        'css.styleSheets': ['src/**/*.css', 'src/**/*.less', 'src/**/*.scss', 'src/**/*.sass'],
       },
       null,
       2,
@@ -753,7 +759,7 @@ function crApi(name, isTs, isRouter, isApi, isUi) {
   fs.writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
 }
 function tsTojs(str) {
-  typescript.transpileModule(str, {
+  return typescript.transpileModule(str, {
     compilerOptions: {
       module: typescript.ModuleKind.ESNext,
       target: typescript.ScriptTarget.ESNext,
