@@ -754,13 +754,7 @@ function crApi(name, isTs, isRouter, isApi, isUi, isDeload) {
   let httpStr = fs.readFileSync(`${ml}/https.txt`, 'utf-8');
   httpStr = httpStr.replaceAll(
     '<ui@1>',
-    isUi && !isDeload == 'element-plus'
-      ? `import { ElMessage } from 'element-plus'`
-      : isUi && !isDeload == '@arco-design/web-vue'
-      ? `import { Message } from '@arco-design/web-vue';`
-      : isUi && !isDeload == 'vant'
-      ? `import { showToast } from 'vant';`
-      : '',
+    isUi == 'element-plus' && !isDeload ? `import { ElMessage } from 'element-plus'` : isUi == '@arco-design/web-vue' ? `import { Message } from '@arco-design/web-vue';` : isUi == 'vant' && !isDeload ? `import { showToast } from 'vant';` : '',
   );
   httpStr = httpStr.replaceAll('<route@1>', isRouter ? `import router from '@/router'` : '');
   httpStr = httpStr.replaceAll('<route@2>', isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`);
