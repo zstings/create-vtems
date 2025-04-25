@@ -50,7 +50,7 @@ program.description('创建模版').action(async () => {
     const { isCss } = await inquirer.prompt({
       type: 'list',
       name: 'isCss',
-      message: '是否css预处理器？',
+      message: '是否使用css预处理器？',
       choices: ['否', 'less', 'sass'],
     });
     let isDeload;
