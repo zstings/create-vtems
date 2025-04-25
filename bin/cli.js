@@ -787,7 +787,7 @@ function crAutoImports(name, isTs, isApi, isUi, isDeload) {
   isTs = isTs == '是';
   isApi = isApi == '是';
   isDeload = isDeload == '是';
-  if (isTs && isUi && isUi == 'element-plus' && isDeload) {
+  if (isTs && isUi != '否' && isDeload) {
     const str = `/* eslint-disable */
 /* prettier-ignore */
 // @ts-nocheck
@@ -796,7 +796,7 @@ function crAutoImports(name, isTs, isApi, isUi, isDeload) {
 // biome-ignore lint: disable
 export {}
 declare global {
-  const ElMessage: typeof import('element-plus/es')['ElMessage']
+  ${isUi == 'element-plus' ? `const ElMessage: typeof import('element-plus/es')['ElMessage']` : isUi == 'vant' ? `const showToast: typeof import('vant/es')['showToast']` : ''}
 }
     `;
     fs.writeFileSync(`./${name}/auto-imports.d.ts`, str, 'utf-8');
