@@ -47,6 +47,12 @@ program.description('创建模版').action(async () => {
       message: '是否启用 ui？',
       choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
     });
+    const { isCss } = await inquirer.prompt({
+      type: 'list',
+      name: 'isCss',
+      message: '是否css预处理器？',
+      choices: ['否', 'less', 'sass'],
+    });
     let isDeload;
     if (isUi !== '否') {
       const { isDeload: deloadAnswer } = await inquirer.prompt({
@@ -60,13 +66,13 @@ program.description('创建模版').action(async () => {
     // 创建目录
     mkdirSync(`./${name}`, { recursive: true });
     // 创建vite.config
-    crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload);
+    crViteConfig(name, isTs, isUi, isDeload);
     // 创建README
     crReadme(name);
     // 创建ts.config
-    crTsconfig(name, isTs, isRouter, isApi, isUi);
+    crTsconfig(name, isTs, isUi);
     // 创建package.json
-    crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload);
+    crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload, isCss);
     // 创建index.html
     crIndexHtml(name, isTs);
     // 创建Eslint 、 Prettierrc
@@ -74,7 +80,7 @@ program.description('创建模版').action(async () => {
     // 创建gitignore
     crGitignore(name);
     // 创建src
-    crSrc(name, isTs, isRouter, isApi, isUi, isDeload);
+    crSrc(name, isTs, isRouter, isUi, isDeload);
     // 创建vscode
     crVscode(name);
     // 创建api
@@ -100,7 +106,7 @@ program.description('创建模版').action(async () => {
 // 解析用户执行命令传入参数
 program.parse(process.argv);
 // 创建vite.config
-function crViteConfig(name, isTs, isRouter, isApi, isUi, isDeload) {
+function crViteConfig(name, isTs, isUi, isDeload) {
   isDeload = isDeload == '是';
   const str = `import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
@@ -166,7 +172,7 @@ export default defineConfig({
   fs.writeFileSync(`./${name}/vite.config.${isTs == '是' ? 'ts' : 'js'}`, str, 'utf-8');
 }
 // 创建README
-function crReadme(name, isTs) {
+function crReadme(name) {
   const str = `## Project Setup
 
 \`\`\`sh
@@ -194,7 +200,7 @@ pnpm lint
   fs.writeFileSync(`./${name}/README.md`, str, 'utf-8');
 }
 // 创建ts.config
-function crTsconfig(name, isTs, isRouter, isApi, isUi) {
+function crTsconfig(name, isTs, isUi) {
   if (isTs == '是') {
     fs.writeFileSync(
       `./${name}/tsconfig.node.json`,
@@ -270,7 +276,7 @@ function crTsconfig(name, isTs, isRouter, isApi, isUi) {
   }
 }
 // 创建package.json
-function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload) {
+function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload, isCss) {
   isTs = isTs == '是';
   isRouter = isRouter == '是';
   isApi = isApi == '是';
@@ -320,6 +326,7 @@ function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload) {
       packagejson.dependencies[isUi] = '^2.56.0';
       if (isDeload) {
         packagejson.devDependencies['@arco-plugins/vite-vue'] = '^1.4.5';
+        packagejson.devDependencies['@arco-design/color'] = '^0.4.0';
       }
     }
     if (isUi == 'vant') {
@@ -343,6 +350,8 @@ function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload) {
     packagejson.devDependencies['@eslint/js'] = '^9.22.0';
     packagejson.devDependencies['globals'] = '^16.0.0';
   }
+  if (isCss == 'less') packagejson.devDependencies['less'] = '^4.3.0';
+  if (isCss == 'sass') packagejson.devDependencies['sass'] = '^1.87.0';
   fs.writeFileSync(`./${name}/package.json`, JSON.stringify(packagejson, null, 2), 'utf-8');
 }
 // 创建index.html
@@ -512,7 +521,7 @@ max_line_length = 100
   fs.writeFileSync(`./${name}/.gitattributes`, `* text=auto eol=lf`, 'utf-8');
 }
 // 创建src
-function crSrc(name, isTs, isRouter, isApi, isUi, isDeload) {
+function crSrc(name, isTs, isRouter, isUi, isDeload) {
   isTs = isTs == '是';
   isDeload = isDeload == '是';
   mkdirSync(`./${name}/src/assets`, { recursive: true });
@@ -699,6 +708,11 @@ export default router`,
     );
     fs.writeFileSync(`./${name}/src/views/AboutView.vue`, `<template>AboutView</template>`, 'utf-8');
     fs.writeFileSync(`./${name}/src/views/HomeView.vue`, `<template>HomeView</template>`, 'utf-8');
+  }
+  // @arco-design/web-vue ui 主题色 生成脚本
+  if (isUi == '@arco-design/web-vue') {
+    let color = fs.readFileSync(`${ml}/color.txt`, 'utf-8');
+    fs.writeFileSync(`./${name}/color.js`, color, 'utf-8');
   }
 }
 // 创建vscode
