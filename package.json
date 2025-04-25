@@ -16,6 +16,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "@zstings",
+  "license": "MIT",
+  "homepage": "https://github.com/zstings/utils#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zstings/utils.git"
+  }
 }
