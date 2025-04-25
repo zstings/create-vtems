@@ -10,7 +10,7 @@ const ml = dirname(process.argv[1]);
 const program = new Command();
 program.description('创建模版').action(async () => {
   try {
-    console.log(`当前版本：1.3.0`);
+    console.log(`当前版本：1.4.0`);
     // 命名项目
     const { name } = await inquirer.prompt({
       type: 'input',
