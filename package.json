@@ -18,9 +18,9 @@
   },
   "author": "@zstings",
   "license": "MIT",
-  "homepage": "https://github.com/zstings/utils#readme",
+  "homepage": "https://github.com/zstings/create-vtems#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zstings/utils.git"
+    "url": "git+https://github.com/zstings/create-vtems.git"
   }
 }
