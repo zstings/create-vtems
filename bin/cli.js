@@ -10,7 +10,7 @@ const ml = dirname(process.argv[1]);
 const program = new Command();
 program.description('创建模版').action(async () => {
   try {
-    console.log(`当前版本：1.4.5`);
+    console.log(`当前版本：1.4.6`);
     // 命名项目
     const { name } = await inquirer.prompt({
       type: 'input',
@@ -87,6 +87,8 @@ program.description('创建模版').action(async () => {
     crApi(name, isTs, isRouter, isApi, isUi, isDeload);
     // 创建auto-imports.d.ts
     crAutoImports(name, isTs, isApi, isUi, isDeload);
+    // 创建env
+    crEnv(name);
     console.log('正在初始化项目', process.cwd() + '\\' + name);
     console.log('项目初始化完成，可执行以下命令：');
     console.log('\x1b[1;32m' + `cd ${name}` + '\x1b[0m');
@@ -817,6 +819,11 @@ declare global {
     `;
     fs.writeFileSync(`./${name}/auto-imports.d.ts`, str, 'utf-8');
   }
+}
+// 创建env
+function crEnv(name) {
+  fs.writeFileSync(`./${name}/.env.development`, `VITE_APP_API= '/api'`, 'utf-8');
+  fs.writeFileSync(`./${name}/.env.production`, `VITE_APP_API= '真实的api地址'`, 'utf-8');
 }
 function tsTojs(str) {
   return typescript.transpileModule(str, {
