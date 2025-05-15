@@ -10,7 +10,7 @@ const ml = dirname(process.argv[1]);
 const program = new Command();
 program.description('创建模版').action(async () => {
   try {
-    console.log(`当前版本：1.4.4`);
+    console.log(`当前版本：1.4.5`);
     // 命名项目
     const { name } = await inquirer.prompt({
       type: 'input',
@@ -402,16 +402,31 @@ export default defineConfigWithVueTs(
 
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
-  // pluginVue.configs['flat/essential'],
-  {
-    ...pluginVue.configs['flat/essential'],
-    rules: {
-      'vue/multi-word-component-names': 'off',
-    },
-  },
+  pluginVue.configs['flat/recommended'],
   vueTsConfigs.recommended,
   ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
+  {
+    rules: {
+      'vue/multi-word-component-names': 'off',
+      // 允许使用any类型
+      '@typescript-eslint/no-explicit-any': 'off',
+      // 允许使用非空断言
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
 )
   `
     : `
