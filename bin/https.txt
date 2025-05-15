@@ -3,22 +3,39 @@ import axios, { type AxiosRequestConfig, type AxiosRequestHeaders, type AxiosRes
 <route@1>
 
 export interface AppRequestConfig extends AxiosRequestConfig {
-  // 设置为false，则不会在错误时自动显示错误提示
-  showError?: boolean;
-  // 返回原数据
+  /**
+   * 返回原数据
+   * 默认不返回
+   * 若设置为true，则返回原数据，不做任何处理
+   * 若设置为false，则返回data字段数据
+   */
   returnResponse?: boolean;
-  // 无需token
+  /**
+   * 指定接口无需token
+   * 默认传递token
+   * 若设置为true，则不传递token
+   */
   noToken?: boolean;
-  // 200 下是否显示提示消息
-  showMsg?: boolean;
+  /**
+   * 200 下是否显示提示消息
+   * 默认不显示消息，除非显示设置为true
+   */
+  showOKMsg?: boolean;
+  /**
+   * !200 下是否显示提示消息
+   * 默认 显示消息，除非显示设置为false关闭，其他一律显示
+   */
+  showERRMsg?: boolean;
+  /**
+   * 成功状态码
+   * 默认 200
+   */
+  successCode?: number;
 }
 export interface ResData<T = any> {
   code: number;
   data: T;
   msg: string;
-}
-export interface ParamsData {
-  [key: string]: any;
 }
 
 interface AppInternalAxiosRequestConfig extends AppRequestConfig {
@@ -65,18 +82,16 @@ https.interceptors.response.use(
     // response.data 为接口直接返回的信息，这个信息不包含http状态信息
     const { config, data: resData } = response;
     const { code, data, msg } = resData;
-    // 返回信息类型为blob，或者code字段不存在，直接返回原始数据，忽略一切自定义参数，如returnResponse、showError等
-    if (response.config.responseType == 'blob' || !('code' in resData)) return resData;
+    // 返回信息类型不是json，或者code字段不存在，直接返回原始数据，忽略一切自定义参数，如returnResponse、showError等
+    if (response.config.responseType != 'json' || !resData.hasOwnProperty('code')) return resData;
     // 如果code为400， 直接跳转到登录
     if (code == 400) return <route@2>;
-    // 如果code不为200, 将返回信息已错误形式输出到catch里，接口可以使用catch接收
-    // 如果returnResponse被设置为true, 会跳过此处验证，code非200不在视为错误信息。此时，showError 会直接无效
-    if (code != 200 && !config.returnResponse) {
-      // showError 为自定义参数，类型boolean，默认不存在，即undefined，除非显式设置为false关闭，其他一律显示
-      if (config.showError != false) <ui@2>;
+    if (code == config.successCode && config.showOKMsg) <ui@3>;
+    if (code != config.successCode) {
+      // 默认显示错误信息，除非显示设置为false
+      if (config.showERRMsg !== true) <ui@2>;
       return Promise.reject(new Error(msg, { cause: resData }));
     }
-    if (!config.returnResponse && config.showMsg) <ui@2>;
     // 根据returnResponse返回信息
     return config.returnResponse ? resData : data;
   },
@@ -85,18 +100,24 @@ https.interceptors.response.use(
   },
 );
 
-export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>;
-export function Get<T = any>(url: string, params?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>;
-export function Get<T = any>(url: string, params?: Record<string, any>, config?: AppRequestConfig): Promise<T>;
-export function Get<T = any>(url: string, params: Record<string, any> = {}, config: AppRequestConfig = {}) {
+type ResponseTypeMap = {
+  blob: Blob;
+  arraybuffer: ArrayBuffer;
+  document: Document;
+  formdata: FormData;
+  stream: ReadableStream;
+  text: Text;
+};
+type ExtractResponseType<U> = U extends { responseType: keyof ResponseTypeMap } ? ResponseTypeMap[U['responseType']]: never;
+type TypeT<T, U> = ExtractResponseType<U> extends never ? T : ExtractResponseType<U>;
+type ResT<T, U> = U extends { returnResponse: true } ? ResData<TypeT<T, U>> : TypeT<T, U>;
+
+export function Get<U, T = any>(url: string, params: Record<string, any> = {}, config: AppRequestConfig = {}) {
   config.params = params;
-  return https.request<null, T>({ method: 'get', url, ...config });
+  return https.request<null, ResT<T, U>>({ method: 'get', url, ...config });
 }
 
-export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse?: false } & AppRequestConfig): Promise<T>;
-export function Post<T = any>(url: string, data?: Record<string, any>, config?: { returnResponse: true } & AppRequestConfig): Promise<ResData<T>>;
-export function Post<T = any>(url: string, data?: Record<string, any>, config?: AppRequestConfig): Promise<T>;
-export function Post<T = ResData>(url: string, data: Record<string, any> = {}, config: AppRequestConfig = {}) {
+export function Post<U, T = any>(url: string, data: Record<string, any> = {}, config: AppRequestConfig = {}) {
   config.data = data;
-  return https.request<null, T>({ method: 'post', url, ...config });
+  return https.request<null, ResT<T, U>>({ method: 'get', url, ...config });
 }

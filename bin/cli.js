@@ -779,6 +779,7 @@ function crApi(name, isTs, isRouter, isApi, isUi, isDeload) {
   httpStr = httpStr.replaceAll('<route@1>', isRouter ? `import router from '@/router'` : '');
   httpStr = httpStr.replaceAll('<route@2>', isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`);
   httpStr = httpStr.replaceAll('<ui@2>', isUi == 'element-plus' ? `ElMessage.error(msg)` : isUi == '@arco-design/web-vue' ? `Message.error(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)');
+  httpStr = httpStr.replaceAll('<ui@3>', isUi == 'element-plus' ? `ElMessage.success(msg)` : isUi == '@arco-design/web-vue' ? `Message.success(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)');
   if (!isTs) httpStr = tsTojs(httpStr);
   fs.writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
 }
