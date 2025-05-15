@@ -119,5 +119,5 @@ export function Get<U, T = any>(url: string, params: Record<string, any> = {}, c
 
 export function Post<U, T = any>(url: string, data: Record<string, any> = {}, config: AppRequestConfig = {}) {
   config.data = data;
-  return https.request<null, ResT<T, U>>({ method: 'get', url, ...config });
+  return https.request<null, ResT<T, U>>({ method: 'post', url, ...config });
 }
