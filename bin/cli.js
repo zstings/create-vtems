@@ -1,166 +1,337 @@
-#!/usr/bin/env node
-process.noDeprecation = true;
-import { Command } from 'commander';
-import inquirer from 'inquirer';
-import fs from 'fs';
-import typescript from 'typescript';
-import { existsSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
-const ml = dirname(process.argv[1]);
-const program = new Command();
-program.description('创建模版').action(async () => {
-  try {
-    console.log(`当前版本：1.4.6`);
-    // 命名项目
-    const { name } = await inquirer.prompt({
-      type: 'input',
-      name: 'name',
-      message: '请输入项目名称：',
-      default: 'vtems_project',
-    });
-    if (existsSync(`./${name}`)) {
-      // rmSync(`./${name}`, { recursive: true, force: true });
-      console.log('\x1b[1;33m' + `❌目录已存在` + '\x1b[0m');
-      process.exit(0);
-    }
-    const { isTs } = await inquirer.prompt({
-      type: 'list',
-      name: 'isTs',
-      message: '是否使用 TypeScript 语法？',
-      choices: ['否', '是'],
-    });
-    const { isRouter } = await inquirer.prompt({
-      type: 'list',
-      name: 'isRouter',
-      message: '是否引入 Vue Router 进行单页面应用开发？',
-      choices: ['否', '是'],
-    });
-    const { isApi } = await inquirer.prompt({
-      type: 'list',
-      name: 'isApi',
-      message: '是否启用 axios 接口请求？',
-      choices: ['否', '是'],
-    });
-    const { isUi } = await inquirer.prompt({
-      type: 'list',
-      name: 'isUi',
-      message: '是否启用 ui？',
-      choices: ['否', 'element-plus', '@arco-design/web-vue', 'vant'],
-    });
-    const { isCss } = await inquirer.prompt({
-      type: 'list',
-      name: 'isCss',
-      message: '是否使用css预处理器？',
-      choices: ['否', 'less', 'sass'],
-    });
-    let isDeload;
-    if (isUi !== '否') {
-      const { isDeload: deloadAnswer } = await inquirer.prompt({
-        type: 'list',
-        name: 'isDeload',
-        message: 'ui是否按需加载？',
-        choices: ['否', '是'],
-      });
-      isDeload = deloadAnswer;
-    }
-    // 创建目录
-    mkdirSync(`./${name}`, { recursive: true });
-    // 创建vite.config
-    crViteConfig(name, isTs, isUi, isDeload);
-    // 创建README
-    crReadme(name);
-    // 创建ts.config
-    crTsconfig(name, isTs, isUi);
-    // 创建package.json
-    crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload, isCss);
-    // 创建index.html
-    crIndexHtml(name, isTs);
-    // 创建Eslint 、 Prettierrc
-    crEslintPrettierrc(name, isTs);
-    // 创建gitignore
-    crGitignore(name);
-    // 创建src
-    crSrc(name, isTs, isRouter, isUi, isDeload);
-    // 创建vscode
-    crVscode(name);
-    // 创建api
-    crApi(name, isTs, isRouter, isApi, isUi, isDeload);
-    // 创建auto-imports.d.ts
-    crAutoImports(name, isTs, isApi, isUi, isDeload);
-    // 创建env
-    crEnv(name);
-    console.log('正在初始化项目', process.cwd() + '\\' + name);
-    console.log('项目初始化完成，可执行以下命令：');
-    console.log('\x1b[1;32m' + `cd ${name}` + '\x1b[0m');
-    console.log('\x1b[1;32m' + `pnpm install` + '\x1b[0m');
-    console.log('\x1b[1;32m' + `pnpm dev` + '\x1b[0m');
-  } catch (e) {
-    // console.log(e,11, e.message.includes('closed'), inquirer.ExitPromptError)
-    if (e.message.includes('closed')) {
-      console.log('');
-      console.log('❌操作取消');
-      process.exit(0);
-    } else {
-      throw e;
-    }
+// import { spawn } from 'child_process';
+
+// function runCreateVue(projectName) {
+//   return new Promise((resolve, reject) => {
+//     const args = ['create-vue@latest'];
+
+//     const child = spawn('npx', args, {
+//       shell: true,
+//       stdio: ['inherit', 'pipe', 'pipe'], // ⬅️ 拦截输出
+//     });
+
+//     child.stdout.on('data', data => {
+//       const str = data.toString();
+//       if (!str.includes('cd') && !str.includes('npm install')) {
+//         process.stdout.write(str); // 有选择性打印输出
+//       } else {
+//         // console.log(33);
+//         process.stdout.write(str);
+//       }
+//     });
+
+//     child.stderr.on('data', data => {
+//       process.stderr.write(data.toString());
+//     });
+
+//     child.on('exit', code => {
+//       if (code !== 0) {
+//         reject(new Error(`create-vue 失败，退出码 ${code}`));
+//       } else {
+//         resolve();
+//       }
+//     });
+//   });
+// }
+
+// async function main() {
+//   const projectName = process.argv[2];
+//   if (!projectName) {
+//     console.error('❌ 请提供项目名称，例如：npm create aa my-app');
+//     process.exit(1);
+//   }
+
+//   // 🛠 先执行你自己的逻辑
+//   // console.log('👉 执行自定义前置逻辑...');
+//   // await new Promise(r => setTimeout(r, 1000));
+
+//   // ▶️ 然后再调用 create-vue
+//   await runCreateVue(projectName);
+
+//   // ✅ 执行完毕
+//   console.log('🎉 完成！可以执行后续操作...');
+// }
+
+// main();
+
+import { isCancel, cancel, text, confirm, multiselect, select, intro } from '@clack/prompts';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { spawn, exec } from 'child_process';
+
+intro(generateGradientText('快速创建'));
+
+async function safePrompt(promptFn) {
+  const result = await promptFn();
+  if (isCancel(result)) {
+    cancel('✖ 操作取消!');
+    process.exit(0);
   }
-});
-// 解析用户执行命令传入参数
-program.parse(process.argv);
-// 创建vite.config
-function crViteConfig(name, isTs, isUi, isDeload) {
-  isDeload = isDeload == '是';
-  const str = `import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
-${
-  isUi == 'element-plus' && isDeload
-    ? `import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'`
-    : isUi == '@arco-design/web-vue' && isDeload
-    ? `import { vitePluginForArco } from '@arco-plugins/vite-vue'`
-    : isUi == 'vant' && isDeload
-    ? `import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { VantResolver } from '@vant/auto-import-resolver';`
-    : ''
+  return result;
 }
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-    ${
-      isUi == 'element-plus' && isDeload
-        ? `AutoImport({
-      resolvers: [ElementPlusResolver()],
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-    }),`
-        : isUi == '@arco-design/web-vue' && isDeload
-        ? `vitePluginForArco({
-      style: 'css'
-    }),`
-        : isUi == 'vant' && isDeload
-        ? `AutoImport({
-      resolvers: [VantResolver()],
-    }),
-    Components({
-      resolvers: [VantResolver()],
-    }),`
-        : ''
-    }
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+const projectName = await safePrompt(() =>
+  text({
+    message: '请输入项目名称：',
+    placeholder: 'vtems_project',
+    initialValue: '',
+    validate(value) {
+      if (value.trim().length === 0) return `不能为空!`;
     },
-  },
-  server: {
+  }),
+);
+
+const isRestDir = await safePrompt(async () => {
+  if (existsSync(`./${projectName}`) && readdirSync(`./${projectName}`).length > 0) {
+    const r = await confirm({
+      message: `目标文件夹 "${projectName}" 非空，是否覆盖？`,
+    });
+    if (r == false) {
+      cancel('✖ 操作取消!');
+      process.exit(0);
+    }
+    return r;
+  }
+  return false;
+});
+
+const additionalTools = await safePrompt(async () => {
+  return await multiselect({
+    message: '请选择要包含的功能： (↑/↓ 切换，空格选择，a 全选，回车确认)',
+    options: [
+      { value: '--ts', label: 'TypeScript' },
+      { value: '--jsx', label: 'JSX 支持' },
+      { value: '--router', label: 'Router（单页面应用开发）' },
+      { value: '--pinia', label: 'Pinia（状态管理）' },
+      { value: 'axios', label: 'axios支持（接口请求）' },
+      { value: 'ui', label: 'ui支持' },
+      { value: 'css', label: 'css预处理器（less、scss）' },
+      { value: '--vitest', label: 'Vitest（单元测试）' },
+      { value: '--endToEnd', label: '端到端测试' },
+      { value: '--eslint', label: 'ESLint（错误预防）' },
+      { value: '--prettier', label: 'Prettier（代码格式化）' },
+    ],
+    required: false,
+  });
+});
+if (additionalTools.includes('css')) {
+  let endToEnd = await safePrompt(async () => {
+    return await select({
+      message: '选择一个css预处理器： (↑/↓ 切换，回车确认)',
+      options: [
+        { value: 'less', label: 'LESS' },
+        { value: 'sass', label: 'SASS' },
+      ],
+      required: false,
+    });
+  });
+  const idx = additionalTools.indexOf('css');
+  additionalTools[idx] = endToEnd;
+}
+if (additionalTools.includes('ui')) {
+  let ui = await safePrompt(async () => {
+    return await select({
+      message: '选择一个ui框架： (↑/↓ 切换，回车确认)',
+      options: [
+        { value: 'element-plus', label: 'element-plus' },
+        { value: '@arco-design/web-vue', label: '@arco-design/web-vue' },
+        { value: 'vant', label: 'vant' },
+      ],
+      required: false,
+    });
+  });
+  const idx = additionalTools.indexOf('ui');
+  additionalTools[idx] = ui;
+  let isUILoad = await safePrompt(async () => {
+    return await confirm({
+      message: `是否对ui添加按需加载`,
+    });
+  });
+  if (isUILoad) additionalTools.push('uiLoad');
+}
+if (additionalTools.includes('--endToEnd')) {
+  let endToEnd = await safePrompt(async () => {
+    return await select({
+      message: '选择一个端到端测试框架： (↑/↓ 切换，回车确认)',
+      options: [
+        { value: '--playwright', label: 'Playwright', hint: 'https://playwright.dev/' },
+        { value: '--cypress', label: 'Cypress', hint: 'https://www.cypress.io/' },
+        { value: '--nightwatch', label: 'Nightwatch', hint: 'https://nightwatchjs.org/' },
+      ],
+      required: false,
+    });
+  });
+  const idx = additionalTools.indexOf('--endToEnd');
+  additionalTools[idx] = endToEnd;
+}
+if (additionalTools.includes('--eslint')) {
+  let isOxlint = await safePrompt(async () => {
+    return await confirm({
+      message: `是否引入 Oxlint 以加快检测？（试验阶段）`,
+    });
+  });
+  if (isOxlint) additionalTools.push('--eslint-with-oxlint');
+}
+
+// 重置项目目录
+if (isRestDir) {
+  rmSync(`./${projectName}`, { recursive: true, force: true });
+  mkdirSync(`./${projectName}`, { recursive: true });
+}
+// 拼接create-vue参数
+const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter(n => n.startsWith('--'))];
+// console.log(args, 'args');
+// 执行create-vue
+const child = spawn('npx', args, {
+  shell: true,
+  stdio: ['inherit', 'pipe', 'pipe'], // ⬅️ 拦截输出
+});
+
+child.stdout.on('data', async data => {
+  const str = data.toString();
+  if (!str.includes('cd') && !str.includes('npm install')) {
+    process.stdout.write(str); // 有选择性打印输出
+  } else {
+    crEnv(projectName);
+    crViteConfig(projectName);
+    crTsConfigApp(projectName);
+    crApi(projectName);
+    crMain(projectName);
+    process.stdout.write(str);
+  }
+});
+
+child.stderr.on('data', data => {
+  process.stderr.write(data.toString());
+});
+
+child.on('exit', code => {
+  if (code !== 0) {
+    console.log(new Error(`create-vue 失败，退出码 ${code}`));
+  }
+});
+
+/**
+ * 生成渐变文本（ANSI RGB 颜色渐变）
+ * @param {string} text - 要渐变的文本内容
+ * @param {object} options - 配置参数
+ * @param {array} options.colors - 渐变颜色范围（起始色和结束色，格式：[起始RGB, 结束RGB]，如 [[255,0,0], [0,0,255]]）
+ * @param {number} [options.step=1] - 颜色过渡步长（数值越小过渡越平滑，建议 1-5）
+ * @param {boolean} [options.random=false] - 是否开启随机颜色波动（用于动态效果）
+ * @returns {string} 带 ANSI 转义序列的渐变文本
+ */
+function generateGradientText(
+  text,
+  {
+    colors = [
+      [66, 211, 146],
+      [100, 126, 255],
+    ],
+    step = 1,
+    random = false,
+  } = {},
+) {
+  if (!colors || colors.length !== 2) {
+    throw new Error('请提供包含起始色和结束色的 colors 数组（格式：[[R,G,B], [R,G,B]]）');
+  }
+
+  const [startColor, endColor] = colors;
+  const chars = text.split('');
+  let gradientText = '';
+
+  // 计算颜色过渡的总步数（考虑步长参数）
+  const totalSteps = Math.max(1, Math.ceil(chars.length / step));
+
+  chars.forEach((char, index) => {
+    // 计算当前字符在渐变中的位置比例
+    const positionRatio = Math.min(1, index / (chars.length - 1 || 1));
+
+    // 计算当前字符的 RGB 值（支持随机波动）
+    const r = Math.round(startColor[0] + (endColor[0] - startColor[0]) * positionRatio * (random ? Math.random() * 0.3 + 0.7 : 1));
+    const g = Math.round(startColor[1] + (endColor[1] - startColor[1]) * positionRatio * (random ? Math.random() * 0.3 + 0.7 : 1));
+    const b = Math.round(startColor[2] + (endColor[2] - startColor[2]) * positionRatio * (random ? Math.random() * 0.3 + 0.7 : 1));
+
+    // 限制颜色值在 0-255 范围内
+    const clampedR = Math.max(0, Math.min(255, r));
+    const clampedG = Math.max(0, Math.min(255, g));
+    const clampedB = Math.max(0, Math.min(255, b));
+
+    // 生成带颜色的字符
+    gradientText += `\x1B[38;2;${clampedR};${clampedG};${clampedB}m${char}\x1B[39m`;
+  });
+
+  return gradientText;
+}
+// 创建env
+function crEnv(name) {
+  writeFileSync(`./${name}/.env.development`, `VITE_APP_API= '/api'`, 'utf-8');
+  writeFileSync(`./${name}/.env.production`, `VITE_APP_API= '真实的api地址'`, 'utf-8');
+}
+// 添加反向代理、对ui的处理
+function crViteConfig(name) {
+  // 是否是ts
+  const isTs = additionalTools.includes('--ts');
+  // 路径
+  const vcpath = `./${name}/vite.config.${isTs ? 'ts' : 'js'}`;
+  // 获取内容
+  let str = readFileSync(vcpath, 'utf-8');
+  // 启用ui且开启按需加载
+  if (additionalTools.includes('uiLoad')) {
+    if (additionalTools.includes('element-plus')) {
+      str = str.replace(
+        `import { defineConfig } from 'vite'`,
+        `import { defineConfig } from 'vite'
+        import AutoImport from 'unplugin-auto-import/vite'
+        import Components from 'unplugin-vue-components/vite'
+        import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'`,
+      );
+      str = str.replace(
+        'vue(),',
+        `vue(),
+        AutoImport({
+          resolvers: [ElementPlusResolver()],
+        }),
+        Components({
+          resolvers: [ElementPlusResolver()],
+        }),`,
+      );
+    }
+    if (additionalTools.includes('@arco-design/web-vue')) {
+      str = str.replace(
+        `import { defineConfig } from 'vite'`,
+        `import { defineConfig } from 'vite'
+        import { vitePluginForArco } from '@arco-plugins/vite-vue'`,
+      );
+      str = str.replace(
+        'vue(),',
+        `vue(),
+        vitePluginForArco({
+          style: 'css'
+        }),`,
+      );
+    }
+    if (additionalTools.includes('vant')) {
+      str = str.replace(
+        `import { defineConfig } from 'vite'`,
+        `import { defineConfig } from 'vite'
+        import AutoImport from 'unplugin-auto-import/vite'
+        import Components from 'unplugin-vue-components/vite'
+        import { VantResolver } from '@vant/auto-import-resolver';`,
+      );
+      str = str.replace(
+        'vue(),',
+        `vue(),
+        AutoImport({
+          resolvers: [VantResolver()],
+        }),
+        Components({
+          resolvers: [VantResolver()],
+        }),`,
+      );
+    }
+  }
+  // 添加反向代理
+  str = str.replace(
+    'resolve:',
+    `server: {
     host: '0.0.0.0',
     proxy: {
       '/api': {
@@ -170,666 +341,234 @@ export default defineConfig({
       },
     },
   },
-})`;
-  fs.writeFileSync(`./${name}/vite.config.${isTs == '是' ? 'ts' : 'js'}`, str, 'utf-8');
+  resolve:`,
+  );
+  writeFileSync(vcpath, str, 'utf-8');
+  exec('npx prettier --write ' + vcpath);
 }
-// 创建README
-function crReadme(name) {
-  const str = `## Project Setup
-
-\`\`\`sh
-pnpm install
-\`\`\`
-
-### Compile and Hot-Reload for Development
-
-\`\`\`sh
-pnpm dev
-\`\`\`
-
-### Type-Check, Compile and Minify for Production
-
-\`\`\`sh
-pnpm build
-\`\`\`
-
-### Lint with [ESLint](https://eslint.org/)
-
-\`\`\`sh
-pnpm lint
-\`\`\`
-`;
-  fs.writeFileSync(`./${name}/README.md`, str, 'utf-8');
-}
-// 创建ts.config
-function crTsconfig(name, isTs, isUi) {
-  if (isTs == '是') {
-    fs.writeFileSync(
-      `./${name}/tsconfig.node.json`,
-      `{
-  "extends": "@tsconfig/node22/tsconfig.json",
-  "include": [
-    "vite.config.*",
-    "vitest.config.*",
-    "cypress.config.*",
-    "nightwatch.conf.*",
-    "playwright.config.*",
-    "eslint.config.*"
-  ],
-  "compilerOptions": {
-    "noEmit": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "types": ["node"]
-  }
-}`,
-      'utf-8',
-    );
-    fs.writeFileSync(
-      `./${name}/tsconfig.app.json`,
-      `{
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "auto-imports.d.ts", "components.d.ts", "src/**/*.d.ts"],
-  "exclude": ["src/**/__tests__/*"],
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    ${isUi == 'element-plus' ? '"types": ["element-plus/global"],' : ''}
-    "baseUrl": ".",
-    "module": "ESNext",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"]
-  }
-}`,
-      'utf-8',
-    );
-    fs.writeFileSync(
-      `./${name}/tsconfig.json`,
-      `{
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.app.json"
-    }
-  ]
-}`,
-      'utf-8',
-    );
-    fs.writeFileSync(`./${name}/env.d.ts`, `/// <reference types="vite/client" />`, 'utf-8');
-  } else {
-    fs.writeFileSync(
-      `./${name}/jsconfig.json`,
-      `{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "exclude": ["node_modules", "dist"]
-}`,
-      'utf-8',
-    );
+// 处理tsconfig.app
+function crTsConfigApp(name) {
+  // 是否是ts
+  const isTs = additionalTools.includes('--ts');
+  if (isTs && additionalTools.includes('element-plus')) {
+    // 路径
+    const taPath = `./${name}/tsconfig.app.json`;
+    // 获取内容
+    let str = JSON.parse(readFileSync(taPath, 'utf-8'));
+    str.compilerOptions.types = ['element-plus/global'];
+    writeFileSync(taPath, JSON.stringify(str, null, 2), 'utf-8');
   }
 }
-// 创建package.json
-function crPackageJson(name, isTs, isRouter, isApi, isUi, isDeload, isCss) {
-  isTs = isTs == '是';
-  isRouter = isRouter == '是';
-  isApi = isApi == '是';
-  isDeload = isDeload == '是';
-  const packagejson = {
-    name: name,
-    version: '1.0.0',
-    private: true,
-    type: 'module',
-    scripts: {
-      dev: 'vite',
-      build: 'vite build',
-      preview: 'vite preview',
-      'lint:oxlint': 'oxlint . --fix -D correctness --ignore-path .gitignore',
-      'lint:eslint': 'eslint . --fix',
-      lint: 'run-s lint:*',
-      format: 'prettier --write src/',
-    },
-    dependencies: {
-      vue: '^3.5.13',
-      '@zstings/utils': '^0.8.0',
-    },
-    devDependencies: {
-      '@vitejs/plugin-vue': '^5.2.3',
-      '@vue/eslint-config-prettier': '^10.2.0',
-      eslint: '^9.22.0',
-      'eslint-plugin-oxlint': '^0.16.0',
-      'eslint-plugin-vue': '~10.0.0',
-      'npm-run-all2': '^7.0.2',
-      oxlint: '^0.16.0',
-      prettier: '^3.5.3',
-      vite: '^6.2.4',
-      'vite-plugin-vue-devtools': '^7.7.2',
-    },
-  };
-  if (isRouter) packagejson.dependencies['vue-router'] = '^4.5.0';
-  if (isApi) packagejson.dependencies['axios'] = '^1.7.8';
-  if (isUi != '否') {
-    if (isUi == 'element-plus') {
-      packagejson.dependencies[isUi] = '^2.9.7';
-      if (isDeload) {
-        packagejson.devDependencies['unplugin-vue-components'] = '^28.5.0';
-        packagejson.devDependencies['unplugin-auto-import'] = '^19.1.2';
-      }
-    }
-    if (isUi == '@arco-design/web-vue') {
-      packagejson.dependencies[isUi] = '^2.56.0';
-      if (isDeload) {
-        packagejson.devDependencies['@arco-plugins/vite-vue'] = '^1.4.5';
-        packagejson.devDependencies['@arco-design/color'] = '^0.4.0';
-      }
-    }
-    if (isUi == 'vant') {
-      packagejson.dependencies[isUi] = '^4.9.18';
-      if (isDeload) {
-        packagejson.devDependencies['unplugin-vue-components'] = '^28.5.0';
-        packagejson.devDependencies['unplugin-auto-import'] = '^19.1.2';
-        packagejson.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
-      }
-    }
-  }
-  if (isTs) {
-    packagejson.scripts['type-check'] = 'vue-tsc --build';
-    packagejson.devDependencies['@tsconfig/node22'] = '^22.0.0';
-    packagejson.devDependencies['@types/node'] = '^22.9.0';
-    packagejson.devDependencies['@vue/eslint-config-typescript'] = '^14.5.0';
-    packagejson.devDependencies['@vue/tsconfig'] = '^0.7.0';
-    packagejson.devDependencies['typescript'] = '~5.8.0';
-    packagejson.devDependencies['vue-tsc'] = '^2.2.8';
-  } else {
-    packagejson.devDependencies['@eslint/js'] = '^9.22.0';
-    packagejson.devDependencies['globals'] = '^16.0.0';
-  }
-  if (isCss == 'less') packagejson.devDependencies['less'] = '^4.3.0';
-  if (isCss == 'sass') packagejson.devDependencies['sass'] = '^1.87.0';
-  fs.writeFileSync(`./${name}/package.json`, JSON.stringify(packagejson, null, 2), 'utf-8');
-}
-// 创建index.html
-function crIndexHtml(name, isTs) {
-  isTs = isTs == '是';
-  fs.writeFileSync(
-    `./${name}/index.html`,
-    `<!DOCTYPE html>
-<html lang="">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${name}</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.${isTs ? 'ts' : 'js'}"></script>
-  </body>
-</html>`,
-    'utf-8',
-  );
-}
-// 创建Eslint 、 Prettierrc
-function crEslintPrettierrc(name, isTs) {
-  isTs = isTs == '是';
-  fs.writeFileSync(
-    `./${name}/eslint.config.js`,
-    `${isTs ? `import { globalIgnores } from 'eslint/config'` : `import { defineConfig, globalIgnores } from 'eslint/config'`}
-import pluginVue from 'eslint-plugin-vue'
-import pluginOxlint from 'eslint-plugin-oxlint'
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
-${isTs ? `import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'` : `import globals from 'globals'\nimport js from '@eslint/js'`}
-
-${
-  isTs
-    ? `
-// To allow more languages other than \`ts\` in \`.vue\` files, uncomment the following lines:
-// import { configureVueProject } from '@vue/eslint-config-typescript'
-// configureVueProject({ scriptLangs: ['ts', 'tsx'] })
-// More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
-
-export default defineConfigWithVueTs(
-  {
-    name: 'app/files-to-lint',
-    files: ['**/*.{ts,mts,tsx,vue}'],
-  },
-
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
-  pluginVue.configs['flat/recommended'],
-  vueTsConfigs.recommended,
-  ...pluginOxlint.configs['flat/recommended'],
-  skipFormatting,
-  {
-    rules: {
-      'vue/multi-word-component-names': 'off',
-      // 允许使用any类型
-      '@typescript-eslint/no-explicit-any': 'off',
-      // 允许使用非空断言
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          args: 'all',
-          argsIgnorePattern: '^_',
-          caughtErrors: 'all',
-          caughtErrorsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          ignoreRestSiblings: true,
-        },
-      ],
-    },
-  },
-)
-  `
-    : `
-export default defineConfig([
-  {
-    name: 'app/files-to-lint',
-    files: ['**/*.{js,mjs,jsx,vue}'],
-  },
-
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
-  {
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
-    },
-  },
-
-  js.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
-  ...pluginOxlint.configs['flat/recommended'],
-  skipFormatting,
-])
-  `
-}
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/.prettierrc.json`,
-    JSON.stringify(
-      {
-        $schema: 'https://json.schemastore.org/prettierrc',
-        arrowParens: 'avoid',
-        bracketSpacing: true,
-        endOfLine: 'auto',
-        printWidth: 250,
-        semi: true,
-        singleQuote: true,
-        tabWidth: 2,
-        trailingComma: 'all',
-        jsxSingleQuote: true,
-        bracketSameLine: true,
-      },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
-}
-// 创建gitignore
-function crGitignore(name) {
-  fs.writeFileSync(
-    `./${name}/.gitignore`,
-    `# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
-
-/cypress/videos/
-/cypress/screenshots/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-*.tsbuildinfo
-
-# Auto-generated TypeScript declaration files
-auto-imports.d.ts
-components.d.ts
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/.editorconfig`,
-    `[*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,css,scss,sass,less,styl}]
-charset = utf-8
-indent_size = 2
-indent_style = space
-insert_final_newline = true
-trim_trailing_whitespace = true
-
-end_of_line = lf
-max_line_length = 100
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(`./${name}/.gitattributes`, `* text=auto eol=lf`, 'utf-8');
-}
-// 创建src
-function crSrc(name, isTs, isRouter, isUi, isDeload) {
-  isTs = isTs == '是';
-  isDeload = isDeload == '是';
-  mkdirSync(`./${name}/src/assets`, { recursive: true });
-  mkdirSync(`./${name}/src/components`, { recursive: true });
-  fs.writeFileSync(
-    `./${name}/src/App.vue`,
-    `<script setup${isTs ? ' lang="ts"' : ''}>
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
-<template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-      ${
-        isRouter
-          ? `<nav>
-        <RouterLink to="/">Home/</RouterLink>
-        <RouterLink to="/about">About/</RouterLink>
-      </nav>
-      <section>
-        <RouterView />
-      </section>`
-          : ''
-      }
-    </div>
-  </header>
-</template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-</style>
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/main.${isTs ? 'ts' : 'js'}`,
-    `import './assets/main.css'
-import { createApp } from 'vue'
-import App from './App.vue'
-${
-  isUi == 'element-plus' && !isDeload
-    ? `
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'`
-    : isUi == '@arco-design/web-vue' && !isDeload
-    ? `
-import ArcoVue from '@arco-design/web-vue'
-import '@arco-design/web-vue/dist/arco.css'
-`
-    : isUi == 'vant' && !isDeload
-    ? `
-import { Button } from 'vant'
-import 'vant/lib/index.css'
-`
-    : ''
-}
-${isRouter ? `import router from './router'` : ''}
-const app = createApp(App)
-${isRouter ? `app.use(router)` : ''}
-${isUi == 'element-plus' && !isDeload ? `app.use(ElementPlus)` : isUi == '@arco-design/web-vue' && !isDeload ? `app.use(ArcoVue)` : isUi == 'vant' && !isDeload ? `app.use(Button)` : ''}
-app.mount('#app')
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/assets/main.css`,
-    `#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-}
-
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/assets/logo.svg`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 261.76 226.69"><path d="M161.096.001l-30.225 52.351L100.647.001H-.005l130.877 226.688L261.749.001z" fill="#41b883"/><path d="M161.096.001l-30.225 52.351L100.647.001H52.346l78.526 136.01L209.398.001z" fill="#34495e"/></svg>`,
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/src/components/HelloWorld.vue`,
-    `${
-      isTs
-        ? `<script setup lang="ts">
-defineProps<{
-  msg: string
-}>()
-</script>`
-        : `<script setup>
-defineProps({
-  msg: {
-    type: String,
-    required: true,
-  },
-})
-</script>`
-    }
-
-<template>
-  <div class="greetings">
-    <h1 class="green">{{ msg }}</h1>
-    <h3>
-      You’ve successfully created a project with
-      <a href="https://vite.dev/" target="_blank" rel="noopener">Vite</a> +
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue 3</a>.
-    </h3>
-  </div>
-</template>
-
-<style scoped>
-h1 {
-  font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
-}
-
-h3 {
-  font-size: 1.2rem;
-}
-
-.greetings h1,
-.greetings h3 {
-  text-align: center;
-}
-</style>
-`,
-    'utf-8',
-  );
-  if (isRouter) {
-    mkdirSync(`./${name}/src/router`, { recursive: true });
-    mkdirSync(`./${name}/src/views`, { recursive: true });
-    fs.writeFileSync(
-      `./${name}/src/router/index.${isTs ? 'ts' : 'js'}`,
-      `import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
-})
-
-export default router`,
-      'utf-8',
-    );
-    fs.writeFileSync(`./${name}/src/views/AboutView.vue`, `<template>AboutView</template>`, 'utf-8');
-    fs.writeFileSync(`./${name}/src/views/HomeView.vue`, `<template>HomeView</template>`, 'utf-8');
-  }
-  // @arco-design/web-vue ui 主题色 生成脚本
-  if (isUi == '@arco-design/web-vue') {
-    let color = fs.readFileSync(`${ml}/color.txt`, 'utf-8');
-    fs.writeFileSync(`./${name}/color.js`, color, 'utf-8');
-  }
-}
-// 创建vscode
-function crVscode(name, isTs) {
-  isTs = isTs == '是';
-  mkdirSync(`./${name}/.vscode`, { recursive: true });
-  fs.writeFileSync(
-    `./${name}/.vscode/extensions.json`,
-    JSON.stringify(
-      {
-        recommendations: ['Vue.volar', 'dbaeumer.vscode-eslint', 'EditorConfig.EditorConfig', 'oxc.oxc-vscode', 'esbenp.prettier-vscode', 'ecmel.vscode-html-css'],
-      },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
-  fs.writeFileSync(
-    `./${name}/.vscode/settings.json`,
-    JSON.stringify(
-      {
-        'explorer.fileNesting.enabled': true,
-        'explorer.fileNesting.patterns': {
-          'tsconfig.json': 'tsconfig.*.json, env.d.ts',
-          'vite.config.*': 'jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*',
-          'package.json': 'package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .prettier*, prettier*, .editorconfig',
-        },
-        'editor.codeActionsOnSave': {
-          'source.fixAll': 'explicit',
-        },
-        'editor.formatOnSave': true,
-        'editor.defaultFormatter': 'esbenp.prettier-vscode',
-        'prettier.configPath': './.prettierrc.json',
-        '[html]': {
-          'editor.defaultFormatter': 'esbenp.prettier-vscode',
-        },
-        // 插件HTML CSS Support -> 建议的本地或远程样式表列表。
-        'css.styleSheets': ['src/**/*.css', 'src/**/*.less', 'src/**/*.scss', 'src/**/*.sass'],
-      },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
-}
-// 创建api
-function crApi(name, isTs, isRouter, isApi, isUi, isDeload) {
-  isTs = isTs == '是';
-  isApi = isApi == '是';
-  isRouter = isRouter == '是';
-  isDeload = isDeload == '是';
-  if (!isApi) return;
+// 处理axios、api
+function crApi(name) {
+  const isTs = additionalTools.includes('--ts');
+  const isAxios = additionalTools.includes('axios');
+  const isRouter = additionalTools.includes('--router');
+  const isUiLoad = additionalTools.includes('uiLoad');
+  if (!isAxios) return;
+  // 创建目标目录
   mkdirSync(`./${name}/src/api`, { recursive: true });
   mkdirSync(`./${name}/src/https`, { recursive: true });
-  let apiStr = fs.readFileSync(`${ml}/api.txt`, 'utf-8');
-  if (!isTs) apiStr = tsTojs(apiStr);
-  fs.writeFileSync(`./${name}/src/api/index.${isTs ? 'ts' : 'js'}`, apiStr, 'utf-8');
+  const apiStr = `
+    import { Post, Get${isTs ? ', type AppRequestConfig' : ''} } from '../https';
+    export function api1${isTs ? '<U extends AppRequestConfig>' : ''}(data${isTs ? ': Record<string, any>' : ''} = {}, config${isTs ? ': U' : ''} = {}${isTs ? ' as U' : ''}) {
+      return Get${isTs ? '<U, { token: string }>' : ''}('https://api.testurl.com/get_token', data, config);
+    }
+    export function api2${isTs ? '<U extends AppRequestConfig>' : ''}(data${isTs ? ': Record<string, any>' : ''} = {}, config${isTs ? ': U' : ''} = {}${isTs ? ' as U' : ''}) {
+      return Post${isTs ? '<U, { token: string }>' : ''}('https://api.testurl.com/get_token', data, config);
+    }
+  `;
+  writeFileSync(`./${name}/src/api/index.${isTs ? 'ts' : 'js'}`, apiStr, 'utf-8');
 
-  let httpStr = fs.readFileSync(`${ml}/https.txt`, 'utf-8');
-  httpStr = httpStr.replaceAll(
-    '<ui@1>',
-    isUi == 'element-plus' && !isDeload ? `import { ElMessage } from 'element-plus'` : isUi == '@arco-design/web-vue' ? `import { Message } from '@arco-design/web-vue';` : isUi == 'vant' && !isDeload ? `import { showToast } from 'vant';` : '',
+  let httpStr = `
+    import axios${isTs ? ', { type AxiosRequestConfig, type AxiosRequestHeaders, type AxiosResponse }' : ''} from 'axios';
+    ${additionalTools.includes('element-plus') && !isUiLoad ? `import { ElMessage } from 'element-plus'` : additionalTools.includes('@arco-design/web-vue') ? `import { Message } from '@arco-design/web-vue';` : additionalTools.includes('vant') && !isUiLoad ? `import { showToast } from 'vant';` : ''}
+    ${isRouter ? `import router from '@/router'` : ''}
+    ${
+      isTs
+        ? `
+      export interface AppRequestConfig extends AxiosRequestConfig {
+        /**
+         * 返回原数据
+         * 默认不返回
+         * 若设置为true，则返回原数据，不做任何处理
+         * 若设置为false，则返回data字段数据
+         */
+        returnResponse?: boolean;
+        /**
+         * 指定接口无需token
+         * 默认传递token
+         * 若设置为true，则不传递token
+         */
+        noToken?: boolean;
+        /**
+         * 200 下是否显示提示消息
+         * 默认不显示消息，除非显示设置为true
+         */
+        showOKMsg?: boolean;
+        /**
+         * !200 下是否显示提示消息
+         * 默认 显示消息，除非显示设置为false关闭，其他一律显示
+         */
+        showERRMsg?: boolean;
+        /**
+         * 成功状态码
+         * 默认 200
+         */
+        successCode?: number;
+      }
+      export interface ResData<T = any> {
+        code: number;
+        data: T;
+        msg: string;
+      }
+      interface AppInternalAxiosRequestConfig extends AppRequestConfig {
+        headers: AxiosRequestHeaders;
+      }
+      interface AppAxiosResponse<T = any> extends AxiosResponse<T> {
+        config: AppInternalAxiosRequestConfig;
+      }
+      type ResponseTypeMap = {
+        blob: Blob;
+        arraybuffer: ArrayBuffer;
+        document: Document;
+        formdata: FormData;
+        stream: ReadableStream;
+        text: Text;
+      };
+      type ExtractResponseType<U> = U extends { responseType: keyof ResponseTypeMap } ? ResponseTypeMap[U['responseType']]: never;
+      type TypeT<T, U> = ExtractResponseType<U> extends never ? T : ExtractResponseType<U>;
+      type ResT<T, U> = U extends { returnResponse: true } ? ResData<TypeT<T, U>> : TypeT<T, U>;
+    `
+        : ''
+    }
+    const https = axios.create({
+      baseURL: import.meta.env.VITE_APP_API,
+      timeout: 20000,
+    });
+
+    https.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+
+    // 添加请求拦截器
+    https.interceptors.request.use(
+      (config${isTs ? ': AppInternalAxiosRequestConfig' : ''}) => {
+        // 处理token
+        if (!config.noToken) {
+          if (config.method == 'get') {
+            if (config.params == undefined) config.params = {};
+            if (localStorage.token) config.params.token = localStorage.getItem('token');
+          }
+          if (config.method == 'post') {
+            if (config.data == undefined) config.data = {};
+            if (localStorage.token) config.data.token = localStorage.getItem('token');
+          }
+        }
+        return config;
+      },
+      error => {
+        // 对请求错误做些什么
+        return Promise.reject(error);
+      },
+    );
+
+    // 添加响应拦截器
+    https.interceptors.response.use(
+      (response${isTs ? ': AppAxiosResponse<ResData>' : ''}) => {
+        // response.data 为接口直接返回的信息，这个信息不包含http状态信息
+        const { config, data: resData } = response;
+        const { code, data, msg } = resData;
+        // 返回信息类型不是json，或者code字段不存在，直接返回原始数据，忽略一切自定义参数，如returnResponse、showError等
+        if (response.config.responseType != 'json' || !resData.hasOwnProperty('code')) return resData;
+        // 如果code为400， 直接跳转到登录
+        if (code == 400) return ${isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`};
+        if (code == config.successCode && config.showOKMsg) ${additionalTools.includes('element-plus') ? `ElMessage.success(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.success(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};;
+        if (code != config.successCode) {
+          // 默认显示错误信息，除非显示设置为false
+          if (config.showERRMsg !== true) ${additionalTools.includes('element-plus') ? `ElMessage.error(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.error(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};
+          return Promise.reject(new Error(msg, { cause: resData }));
+        }
+        // 根据returnResponse返回信息
+        return config.returnResponse ? resData : data;
+      },
+      error => {
+        return Promise.reject(error);
+      },
+    );
+
+    export function Get${isTs ? '<U, T = any>' : ''}(url${isTs ? ': string' : ''}, params${isTs ? ': Record<string, any>' : ''} = {}, config${isTs ? ': AppRequestConfig' : ''} = {}) {
+      config.params = params;
+      return https.request${isTs ? '<null, ResT<T, U>>' : ''}({ method: 'get', url, ...config });
+    }
+
+    export function Post${isTs ? '<U, T = any>' : ''}(url${isTs ? ': string' : ''}, data${isTs ? ': Record<string, any>' : ''} = {}, config${isTs ? ': AppRequestConfig' : ''} = {}) {
+      config.data = data;
+      return https.request${isTs ? '<null, ResT<T, U>>' : ''}({ method: 'post', url, ...config });
+    }
+
+  `;
+  writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
+
+  exec('npx prettier --write ' + `./${name}/src/api/index.${isTs ? 'ts' : 'js'}`);
+  exec('npx prettier --write ' + `./${name}/src/https/index.${isTs ? 'ts' : 'js'}`);
+}
+// 处理main
+function crMain(name) {
+  // 是否是ts
+  const isTs = additionalTools.includes('--ts');
+  // 路径
+  const strPath = `./${name}/src/main.${isTs ? 'ts' : 'js'}`;
+  // 获取内容
+  let str = readFileSync(strPath, 'utf-8');
+
+  str = str.replace(
+    `createApp(App).mount('#app')`,
+    `
+    const app = createApp(App)
+    app.mount('#app')
+  `,
   );
-  httpStr = httpStr.replaceAll('<route@1>', isRouter ? `import router from '@/router'` : '');
-  httpStr = httpStr.replaceAll('<route@2>', isRouter ? `router.push({ name: 'login' })` : `alert('未登录')`);
-  httpStr = httpStr.replaceAll('<ui@2>', isUi == 'element-plus' ? `ElMessage.error(msg)` : isUi == '@arco-design/web-vue' ? `Message.error(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)');
-  httpStr = httpStr.replaceAll('<ui@3>', isUi == 'element-plus' ? `ElMessage.success(msg)` : isUi == '@arco-design/web-vue' ? `Message.success(msg)` : isUi == 'vant' ? `showToast(msg)` : 'alert(msg)');
-  if (!isTs) httpStr = tsTojs(httpStr);
-  fs.writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
-}
-// 创建auto-imports.d.ts
-function crAutoImports(name, isTs, isApi, isUi, isDeload) {
-  isTs = isTs == '是';
-  isApi = isApi == '是';
-  isDeload = isDeload == '是';
-  if (isTs && isUi != '否' && isDeload) {
-    const str = `/* eslint-disable */
-/* prettier-ignore */
-// @ts-nocheck
-// noinspection JSUnusedGlobalSymbols
-// Generated by unplugin-auto-import
-// biome-ignore lint: disable
-export {}
-declare global {
-  ${isUi == 'element-plus' ? `const ElMessage: typeof import('element-plus/es')['ElMessage']` : isUi == 'vant' ? `const showToast: typeof import('vant/es')['showToast']` : ''}
-}
-    `;
-    fs.writeFileSync(`./${name}/auto-imports.d.ts`, str, 'utf-8');
+
+  if (!additionalTools.includes('uiLoad')) {
+    if (additionalTools.includes('element-plus')) {
+      str = str.replace(
+        `import { createApp } from 'vue'`,
+        `import { createApp } from 'vue'
+        import ElementPlus from 'element-plus'
+        import 'element-plus/dist/index.css'`,
+      );
+      str = str.replace(
+        'const app = createApp(App)',
+        `const app = createApp(App)
+        app.use(ElementPlus)`,
+      );
+    }
+    if (additionalTools.includes('@arco-design/web-vue')) {
+      str = str.replace(
+        `import { createApp } from 'vue'`,
+        `import { createApp } from 'vue'
+        import ArcoVue from '@arco-design/web-vue'
+        import '@arco-design/web-vue/dist/arco.css'`,
+      );
+      str = str.replace(
+        'const app = createApp(App)',
+        `const app = createApp(App)
+        app.use(ArcoVue)`,
+      );
+    }
+    if (additionalTools.includes('vant')) {
+      str = str.replace(
+        `import { createApp } from 'vue'`,
+        `import { createApp } from 'vue'
+        import { Button } from 'vant'
+        import 'vant/lib/index.css'`,
+      );
+      str = str.replace(
+        'const app = createApp(App)',
+        `const app = createApp(App)
+        app.use(Button)`,
+      );
+    }
   }
-}
-// 创建env
-function crEnv(name) {
-  fs.writeFileSync(`./${name}/.env.development`, `VITE_APP_API= '/api'`, 'utf-8');
-  fs.writeFileSync(`./${name}/.env.production`, `VITE_APP_API= '真实的api地址'`, 'utf-8');
-}
-function tsTojs(str) {
-  return typescript.transpileModule(str, {
-    compilerOptions: {
-      module: typescript.ModuleKind.ESNext,
-      target: typescript.ScriptTarget.ESNext,
-    },
-  }).outputText;
+  writeFileSync(strPath, str, 'utf-8');
+  exec('npx prettier --write --single-quote ' + strPath);
 }

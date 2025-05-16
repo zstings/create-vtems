@@ -8,11 +8,13 @@
     "vtems": "bin/cli.js"
   },
   "dependencies": {
+    "@clack/prompts": "^0.10.1",
     "commander": "^12.1.0",
     "inquirer": "^12.1.0",
+    "prettier": "^3.5.3",
+    "shelljs": "^0.10.0",
     "typescript": "^5.8.3"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
