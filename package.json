@@ -1,7 +1,7 @@
 {
   "name": "create-vtems",
-  "version": "1.4.6",
-  "description": "快速创建vue项目模板",
+  "version": "2.0.0",
+  "description": "快速创建vue项目模板-基于create-vue",
   "main": "index.js",
   "type": "module",
   "bin": {
@@ -9,11 +9,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.10.1",
-    "commander": "^12.1.0",
-    "inquirer": "^12.1.0",
-    "prettier": "^3.5.3",
-    "shelljs": "^0.10.0",
-    "typescript": "^5.8.3"
+    "prettier": "^3.5.3"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
