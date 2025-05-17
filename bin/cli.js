@@ -519,6 +519,43 @@ function crMain(name) {
     }
   }
   prettierFile(strPath, str);
+
+  // @arco-design/web-vue ui 主题色 生成脚本
+  if (additionalTools.includes('@arco-design/web-vue')) {
+    let color = `
+      import { generate, getRgbStr } from '@arco-design/color';
+      /**
+       * @description: 生成色板 arco-design 主色 css变量值
+       * c 主色
+       * node color.js
+       */
+      const c = '#41b883';
+      console.log(\`
+      --arcoblue-1: \${getRgbStr(generate(c, { index: 1 }))};
+      --primary-1: var(--arcoblue-1);
+      --arcoblue-2: \${getRgbStr(generate(c, { index: 2 }))};
+      --primary-2: var(--arcoblue-2);
+      --arcoblue-3: \${getRgbStr(generate(c, { index: 3 }))};
+      --primary-3: var(--arcoblue-3);
+      --arcoblue-4: \${getRgbStr(generate(c, { index: 4 }))};
+      --primary-4: var(--arcoblue-4);
+      --arcoblue-5: \${getRgbStr(generate(c, { index: 5 }))};
+      --primary-5: var(--arcoblue-5);
+      --arcoblue-6: \${getRgbStr(generate(c, { index: 6 }))};
+      --primary-6: var(--arcoblue-6);
+      --arcoblue-7: \${getRgbStr(generate(c, { index: 7 }))};
+      --primary-7: var(--arcoblue-7);
+      --arcoblue-8: \${getRgbStr(generate(c, { index: 8 }))};
+      --primary-8: var(--arcoblue-8);
+      --arcoblue-9: \${getRgbStr(generate(c, { index: 9 }))};
+      --primary-9: var(--arcoblue-9);
+      --arcoblue-10: \${getRgbStr(generate(c, { index: 10 }))};
+      --primary-10: var(--arcoblue-10);
+      \`);
+      console.log('css变量值已生成，复制到权重大于body的全部class或者id下即可。body可能因为权重不起作用。')
+    `;
+    prettierFile(`./${name}/color.js`, color);
+  }
 }
 // 处理package 依赖添加
 function crPackage(name) {
