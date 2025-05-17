@@ -119,14 +119,13 @@ if (additionalTools.includes('--eslint')) {
   });
   if (isOxlint) additionalTools.push('--eslint-with-oxlint');
 }
-
+const runSpinner = spinner();
+runSpinner.start(generateGradientText('正在创建中'));
 // 重置项目目录
 if (isRestDir) {
   rmSync(`./${projectName}`, { recursive: true, force: true });
   mkdirSync(`./${projectName}`, { recursive: true });
 }
-const runSpinner = spinner();
-runSpinner.start(generateGradientText('正在创建中'));
 // 拼接create-vue参数
 const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter((n) => n.startsWith('--'))];
 // 执行create-vue
