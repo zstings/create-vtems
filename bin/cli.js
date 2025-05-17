@@ -1,59 +1,6 @@
-// import { spawn } from 'child_process';
+#!/usr/bin/env node
 
-// function runCreateVue(projectName) {
-//   return new Promise((resolve, reject) => {
-//     const args = ['create-vue@latest'];
-
-//     const child = spawn('npx', args, {
-//       shell: true,
-//       stdio: ['inherit', 'pipe', 'pipe'], // ⬅️ 拦截输出
-//     });
-
-//     child.stdout.on('data', data => {
-//       const str = data.toString();
-//       if (!str.includes('cd') && !str.includes('npm install')) {
-//         process.stdout.write(str); // 有选择性打印输出
-//       } else {
-//         // console.log(33);
-//         process.stdout.write(str);
-//       }
-//     });
-
-//     child.stderr.on('data', data => {
-//       process.stderr.write(data.toString());
-//     });
-
-//     child.on('exit', code => {
-//       if (code !== 0) {
-//         reject(new Error(`create-vue 失败，退出码 ${code}`));
-//       } else {
-//         resolve();
-//       }
-//     });
-//   });
-// }
-
-// async function main() {
-//   const projectName = process.argv[2];
-//   if (!projectName) {
-//     console.error('❌ 请提供项目名称，例如：npm create aa my-app');
-//     process.exit(1);
-//   }
-
-//   // 🛠 先执行你自己的逻辑
-//   // console.log('👉 执行自定义前置逻辑...');
-//   // await new Promise(r => setTimeout(r, 1000));
-
-//   // ▶️ 然后再调用 create-vue
-//   await runCreateVue(projectName);
-
-//   // ✅ 执行完毕
-//   console.log('🎉 完成！可以执行后续操作...');
-// }
-
-// main();
-
-import { isCancel, cancel, text, confirm, multiselect, select, intro } from '@clack/prompts';
+import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } from '@clack/prompts';
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn, exec } from 'child_process';
 
@@ -83,6 +30,7 @@ const isRestDir = await safePrompt(async () => {
   if (existsSync(`./${projectName}`) && readdirSync(`./${projectName}`).length > 0) {
     const r = await confirm({
       message: `目标文件夹 "${projectName}" 非空，是否覆盖？`,
+      initialValue: false,
     });
     if (r == false) {
       cancel('✖ 操作取消!');
@@ -103,7 +51,7 @@ const additionalTools = await safePrompt(async () => {
       { value: '--pinia', label: 'Pinia（状态管理）' },
       { value: 'axios', label: 'axios支持（接口请求）' },
       { value: 'ui', label: 'ui支持' },
-      { value: 'css', label: 'css预处理器（less、scss）' },
+      { value: 'css', label: 'css预处理器（less、scss|sass、styl|stylus）' },
       { value: '--vitest', label: 'Vitest（单元测试）' },
       { value: '--endToEnd', label: '端到端测试' },
       { value: '--eslint', label: 'ESLint（错误预防）' },
@@ -117,8 +65,9 @@ if (additionalTools.includes('css')) {
     return await select({
       message: '选择一个css预处理器： (↑/↓ 切换，回车确认)',
       options: [
-        { value: 'less', label: 'LESS' },
-        { value: 'sass', label: 'SASS' },
+        { value: 'less', label: 'less' },
+        { value: 'sass', label: 'scss|sass' },
+        { value: 'styl', label: 'styl|stylus' },
       ],
       required: false,
     });
@@ -176,34 +125,36 @@ if (isRestDir) {
   rmSync(`./${projectName}`, { recursive: true, force: true });
   mkdirSync(`./${projectName}`, { recursive: true });
 }
+const runSpinner = spinner();
+runSpinner.start(generateGradientText('正在创建中'));
 // 拼接create-vue参数
-const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter(n => n.startsWith('--'))];
-// console.log(args, 'args');
+const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter((n) => n.startsWith('--'))];
 // 执行create-vue
 const child = spawn('npx', args, {
   shell: true,
   stdio: ['inherit', 'pipe', 'pipe'], // ⬅️ 拦截输出
 });
 
-child.stdout.on('data', async data => {
+child.stdout.on('data', async (data) => {
   const str = data.toString();
-  if (!str.includes('cd') && !str.includes('npm install')) {
-    process.stdout.write(str); // 有选择性打印输出
-  } else {
+  if (str.includes('项目初始化完成')) {
     crEnv(projectName);
     crViteConfig(projectName);
     crTsConfigApp(projectName);
     crApi(projectName);
     crMain(projectName);
-    process.stdout.write(str);
+    crPackage(projectName);
+    crEslintPrettierrc(projectName);
+    runSpinner.stop(generateGradientText('创建完成'));
   }
+  process.stdout.write(str);
 });
 
-child.stderr.on('data', data => {
+child.stderr.on('data', (data) => {
   process.stderr.write(data.toString());
 });
 
-child.on('exit', code => {
+child.on('exit', (code) => {
   if (code !== 0) {
     console.log(new Error(`create-vue 失败，退出码 ${code}`));
   }
@@ -344,7 +295,7 @@ function crViteConfig(name) {
   resolve:`,
   );
   writeFileSync(vcpath, str, 'utf-8');
-  exec('npx prettier --write ' + vcpath);
+  prettierFile(vcpath);
 }
 // 处理tsconfig.app
 function crTsConfigApp(name) {
@@ -508,8 +459,8 @@ function crApi(name) {
   `;
   writeFileSync(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`, httpStr, 'utf-8');
 
-  exec('npx prettier --write ' + `./${name}/src/api/index.${isTs ? 'ts' : 'js'}`);
-  exec('npx prettier --write ' + `./${name}/src/https/index.${isTs ? 'ts' : 'js'}`);
+  prettierFile(`./${name}/src/api/index.${isTs ? 'ts' : 'js'}`);
+  prettierFile(`./${name}/src/https/index.${isTs ? 'ts' : 'js'}`);
 }
 // 处理main
 function crMain(name) {
@@ -570,5 +521,103 @@ function crMain(name) {
     }
   }
   writeFileSync(strPath, str, 'utf-8');
-  exec('npx prettier --write --single-quote ' + strPath);
+  prettierFile(strPath);
+}
+// 处理package 依赖添加
+function crPackage(name) {
+  const isAxios = additionalTools.includes('axios');
+  const isUiLoad = additionalTools.includes('uiLoad');
+  const strPath = `./${name}/package.json`;
+  let str = JSON.parse(readFileSync(strPath, 'utf-8'));
+  if (isAxios) {
+    str.dependencies['axios'] = '^1.9.0';
+  }
+  if (additionalTools.includes('element-plus')) {
+    str.dependencies['element-plus'] = '^2.9.10';
+    if (isUiLoad) {
+      str.devDependencies['unplugin-vue-components'] = '^28.5.0';
+      str.devDependencies['unplugin-auto-import'] = '^19.2.0';
+    }
+  }
+  if (additionalTools.includes('@arco-design/web-vue')) {
+    str.dependencies['@arco-design/web-vue'] = '^2.57.0';
+    if (isUiLoad) {
+      str.devDependencies['@arco-plugins/vite-vue'] = '^1.4.5';
+      str.devDependencies['@arco-design/color'] = '^0.4.0';
+    }
+  }
+  if (additionalTools.includes('vant')) {
+    str.dependencies['vant'] = '^4.9.18';
+    if (isDeload) {
+      str.devDependencies['unplugin-vue-components'] = '^28.5.0';
+      str.devDependencies['unplugin-auto-import'] = '^19.2.0';
+      str.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
+    }
+  }
+  if (additionalTools.includes('less')) str.devDependencies['less'] = '^4.3.0';
+  if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.89.0';
+  if (additionalTools.includes('styl')) str.devDependencies['stylus'] = '^0.64.0';
+  str.dependencies['@zstings/utils'] = '^0.9.0';
+  writeFileSync(strPath, JSON.stringify(str, null, 2), 'utf-8');
+}
+// Eslint 、 Prettierrc
+function crEslintPrettierrc(name) {
+  const isTs = additionalTools.includes('--ts');
+  if (additionalTools.includes('--eslint')) {
+    const eslintPath = `./${name}/eslint.config.${isTs ? 'ts' : 'js'}`;
+    let eslintStr = readFileSync(eslintPath, 'utf-8');
+    eslintStr = eslintStr.replace(
+      'skipFormatting,',
+      `skipFormatting,{
+        rules: {
+          'vue/multi-word-component-names': 'off',
+          'no-fallthrough': 'off',
+          ${
+            isTs
+              ? `// 允许使用any类型
+          '@typescript-eslint/no-explicit-any': 'off',
+          // 允许使用非空断言
+          '@typescript-eslint/no-non-null-assertion': 'off',
+          '@typescript-eslint/no-unused-vars': [
+            'error',
+            {
+              args: 'all',
+              argsIgnorePattern: '^_',
+              caughtErrors: 'all',
+              caughtErrorsIgnorePattern: '^_',
+              destructuredArrayIgnorePattern: '^_',
+              varsIgnorePattern: '^_',
+              ignoreRestSiblings: true,
+            },
+          ],`
+              : ''
+          }
+        },
+      },`,
+    );
+    writeFileSync(eslintPath, eslintStr, 'utf-8');
+    prettierFile(eslintPath);
+  }
+  if (additionalTools.includes('--prettier')) {
+    const prettierPath = `./${name}/.prettierrc.json`;
+    let prettierStr = JSON.parse(readFileSync(prettierPath, 'utf-8'));
+    prettierStr = {
+      $schema: 'https://json.schemastore.org/prettierrc',
+      arrowParens: 'avoid',
+      bracketSpacing: true,
+      endOfLine: 'auto',
+      printWidth: 180,
+      semi: true,
+      singleQuote: true,
+      tabWidth: 2,
+      trailingComma: 'all',
+      jsxSingleQuote: true,
+      bracketSameLine: true,
+    };
+    writeFileSync(prettierPath, JSON.stringify(prettierStr, null, 2), 'utf-8');
+    prettierFile(prettierPath);
+  }
+}
+function prettierFile(path) {
+  exec(`npx prettier --write --single-quote ${path}`);
 }
