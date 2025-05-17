@@ -1,7 +1,0 @@
-import { Post, Get, type AppRequestConfig } from '../https';
-export function api1<U extends AppRequestConfig>(data: Record<string, any> = {}, config: U = {} as U) {
-  return Get<U, { token: string }>('https://api.testurl.com/get_token', data, config);
-}
-export function api2<U extends AppRequestConfig>(data: Record<string, any> = {}, config: U = {} as U) {
-  return Post<U, { toke: string }>('https://api.testurl.com/get_token', data, config);
-}
