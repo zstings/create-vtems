@@ -12,6 +12,8 @@
 ✔ 添加ui支持？… 否 / element-plus / @arco-design/web-vue / vant
 
 ✔ 添加css预处理器？… 否 / less / scss|sass / styl|stylus
+
+✔ 添加css原子化支持？… 否 / TailwindCSS / UnoCSS
 ```
 
 以下是完整的配置列表
