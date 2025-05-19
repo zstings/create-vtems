@@ -300,13 +300,17 @@ function crViteConfig(name) {
 function crTsConfigApp(name) {
   // 是否是ts
   const isTs = additionalTools.includes('--ts');
-  if (isTs && additionalTools.includes('element-plus')) {
+  if (isTs) {
     // 路径
     const taPath = `./${name}/tsconfig.app.json`;
     // 获取内容
     let str = JSON.parse(readFileSync(taPath, 'utf-8'));
-    str.compilerOptions.types = ['element-plus/global'];
+    if (additionalTools.includes('element-plus')) {
+      str.compilerOptions.types = ['element-plus/global'];
+    }
     str.include.push('auto-imports.d.ts', 'components.d.ts', 'src/**/*.d.ts');
+    str.compilerOptions.target = 'ES2022';
+    str.compilerOptions.lib = ['ES2022', 'DOM'];
     writeFileSync(taPath, JSON.stringify(str, null, 2), 'utf-8');
   }
 }
