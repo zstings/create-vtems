@@ -4,7 +4,7 @@
 
 底层使用[create-vue](https://github.com/vuejs/create-vue)，[create-vue](https://github.com/vuejs/create-vue)初始化结束执行create-vtems的内容。
 
-在 [create-vue](https://github.com/vuejs/create-vue) 原版本基础上新增一下配置：
+在 [create-vue](https://github.com/vuejs/create-vue) 原版本基础上新增以下配置：
 
 ```
 ✔ 添加axios接口请求？… 否 / 基于axios的http和api文件极轻量封装
