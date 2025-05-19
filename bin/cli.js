@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.0.0'));
+intro(generateGradientText('create-vtems快速创建 v2.1.0'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -51,7 +51,8 @@ const additionalTools = await safePrompt(async () => {
       { value: '--pinia', label: 'Pinia（状态管理）' },
       { value: 'axios', label: 'axios支持（接口请求）' },
       { value: 'ui', label: 'ui支持' },
-      { value: 'css', label: 'css预处理器（less、scss|sass、styl|stylus）' },
+      { value: 'css', label: 'css预处理器支持' },
+      { value: 'cssAtom', label: 'css原子化支持' },
       { value: '--vitest', label: 'Vitest（单元测试）' },
       { value: '--endToEnd', label: '端到端测试' },
       { value: '--eslint', label: 'ESLint（错误预防）' },
@@ -74,6 +75,20 @@ if (additionalTools.includes('css')) {
   });
   const idx = additionalTools.indexOf('css');
   additionalTools[idx] = endToEnd;
+}
+if (additionalTools.includes('cssAtom')) {
+  let cssAtom = await safePrompt(async () => {
+    return await select({
+      message: '选择一个原子化css工具： (↑/↓ 切换，回车确认)',
+      options: [
+        { value: 'tailwindCSS', label: 'TailwindCSS', hint: 'https://tailwindcss.com/' },
+        { value: 'unoCSS', label: 'UnoCSS', hint: 'https://unocss.dev/' },
+      ],
+      required: false,
+    });
+  });
+  const idx = additionalTools.indexOf('cssAtom');
+  additionalTools[idx] = cssAtom;
 }
 if (additionalTools.includes('ui')) {
   let ui = await safePrompt(async () => {
@@ -145,6 +160,8 @@ child.stdout.on('data', async (data) => {
     crPackage(projectName);
     crEslintPrettierrc(projectName);
     crAutoImports(projectName);
+    vscodeConfig();
+    crOther();
     runSpinner.stop(generateGradientText('创建完成'));
   }
   process.stdout.write(str);
@@ -278,6 +295,30 @@ function crViteConfig(name) {
         }),`,
       );
     }
+  }
+  if (additionalTools.includes('tailwindCSS')) {
+    str = str.replace(
+      `import { defineConfig } from 'vite'`,
+      `import { defineConfig } from 'vite'
+      import tailwindcss from '@tailwindcss/vite'`,
+    );
+    str = str.replace(
+      'vue(),',
+      `vue(),
+      tailwindcss(),`,
+    );
+  }
+  if (additionalTools.includes('unoCSS')) {
+    str = str.replace(
+      `import { defineConfig } from 'vite'`,
+      `import { defineConfig } from 'vite'
+      import UnoCSS from 'unocss/vite'`,
+    );
+    str = str.replace(
+      'vue(),',
+      `vue(),
+      UnoCSS(),`,
+    );
   }
   // 添加反向代理
   str = str.replace(
@@ -522,6 +563,9 @@ function crMain(name) {
       );
     }
   }
+  if (additionalTools.includes('unoCSS')) {
+    str = `import 'virtual:uno.css'\n` + str;
+  }
   prettierFile(strPath, str);
 
   // @arco-design/web-vue ui 主题色 生成脚本
@@ -595,6 +639,16 @@ function crPackage(name) {
   if (additionalTools.includes('less')) str.devDependencies['less'] = '^4.3.0';
   if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.89.0';
   if (additionalTools.includes('styl')) str.devDependencies['stylus'] = '^0.64.0';
+  if (additionalTools.includes('tailwindCSS')) {
+    str.devDependencies['@tailwindcss/vite'] = '^4.1.7';
+    str.devDependencies['tailwindcss'] = '^4.1.7';
+    if (additionalTools.includes('--prettier')) {
+      str.devDependencies['prettier-plugin-tailwindcss'] = '^0.6.11';
+    }
+  }
+  if (additionalTools.includes('unoCSS')) {
+    str.devDependencies['unocss'] = '^66.1.2';
+  }
   str.dependencies['@zstings/utils'] = '^0.9.0';
   writeFileSync(strPath, JSON.stringify(str, null, 2), 'utf-8');
 }
@@ -663,6 +717,9 @@ function crEslintPrettierrc(name) {
       jsxSingleQuote: true,
       bracketSameLine: true,
     };
+    if (additionalTools.includes('tailwindCSS')) {
+      prettierStr.plugins = ['prettier-plugin-tailwindcss'];
+    }
     prettierFile(prettierPath, JSON.stringify(prettierStr, null, 2));
   }
 }
@@ -683,6 +740,46 @@ function crAutoImports(name) {
       }
     `;
     prettierFile(`./${name}/auto-imports.d.ts`, str);
+  }
+}
+// .vscode
+function vscodeConfig() {
+  const settingsPath = `./${projectName}/.vscode/settings.json`;
+  let settingsStr = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+  const extensionsPath = `./${projectName}/.vscode/extensions.json`;
+  let extensionsStr = JSON.parse(readFileSync(extensionsPath, 'utf-8'));
+  if (additionalTools.includes('--prettier')) {
+    settingsStr['[html]'] = {
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+    };
+    settingsStr['[typescript]'] = {
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+    };
+    settingsStr['[vue]'] = {
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+    };
+    settingsStr['[css]'] = {
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+    };
+    settingsStr['[json]'] = {
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+    };
+  }
+  if (additionalTools.includes('tailwindCSS')) {
+    extensionsStr.recommendations.push('bradlc.vscode-tailwindcss');
+  }
+  // 推荐使用vscode-html-css扩展，对项目中的独立css文件进行识别，在vue或者html中添加class时可以有提示。
+  extensionsStr.recommendations.push('ecmel.vscode-html-css');
+  settingsStr['css.styleSheets'] = ['src/**/*.{css,scss,sass,less,styl,stylus,pcss,postcss}'];
+  prettierFile(settingsPath, JSON.stringify(settingsStr, null, 2));
+  prettierFile(extensionsPath, JSON.stringify(extensionsStr, null, 2));
+}
+// 其他一些处理
+function crOther() {
+  if (additionalTools.includes('tailwindCSS')) {
+    const mainCssPath = `./${projectName}/src/assets/main.css`;
+    const mainCssStr = readFileSync(mainCssPath, 'utf-8');
+    prettierFile(mainCssPath, '@import "tailwindcss";\n' + mainCssStr);
   }
 }
 // 格式化文件
