@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.1.0'));
+intro(generateGradientText('create-vtems快速创建 v2.2.0'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -385,25 +385,25 @@ function crApi(name) {
       export interface AppRequestConfig extends AxiosRequestConfig {
         /**
          * 返回原数据
-         * 默认不返回
+         * 默认false 不返回
          * 若设置为true，则返回原数据，不做任何处理
          * 若设置为false，则返回data字段数据
          */
         returnResponse?: boolean;
         /**
          * 指定接口无需token
-         * 默认传递token
+         * 默认false 传递token
          * 若设置为true，则不传递token
          */
         noToken?: boolean;
         /**
          * 200 下是否显示提示消息
-         * 默认不显示消息，除非显示设置为true
+         * 默认false 不显示消息，除非显示设置为true
          */
         showOKMsg?: boolean;
         /**
          * !200 下是否显示提示消息
-         * 默认 显示消息，除非显示设置为false关闭，其他一律显示
+         * 默认true 显示消息，除非显示设置为false关闭，其他一律显示
          */
         showERRMsg?: boolean;
         /**
@@ -440,6 +440,12 @@ function crApi(name) {
     const https = axios.create({
       baseURL: import.meta.env.VITE_APP_API,
       timeout: 20000,
+      returnResponse: false,
+      noToken: false,
+      showOKMsg: false,
+      showERRMsg: true,
+      successCode: 200,
+      responseType: 'json',
     });
 
     https.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
@@ -479,13 +485,16 @@ function crApi(name) {
         if (code == config.successCode && config.showOKMsg) ${additionalTools.includes('element-plus') ? `ElMessage.success(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.success(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};;
         if (code != config.successCode) {
           // 默认显示错误信息，除非显示设置为false
-          if (config.showERRMsg !== true) ${additionalTools.includes('element-plus') ? `ElMessage.error(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.error(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};
+          if (config.showERRMsg) ${additionalTools.includes('element-plus') ? `ElMessage.error(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.error(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};
           return Promise.reject(new Error(msg, { cause: resData }));
         }
         // 根据returnResponse返回信息
         return config.returnResponse ? resData : data;
       },
       error => {
+        if (error.config.showERRMsg) {
+          ${additionalTools.includes('element-plus') ? `ElMessage.error(error.message || '未知错误')` : additionalTools.includes('@arco-design/web-vue') ? `Message.error(error.message || '未知错误')` : additionalTools.includes('vant') ? `showToast(error.message || '未知错误')` : `alert(error.message || '未知错误')`};
+        }
         return Promise.reject(error);
       },
     );
@@ -630,7 +639,7 @@ function crPackage(name) {
   }
   if (additionalTools.includes('vant')) {
     str.dependencies['vant'] = '^4.9.18';
-    if (isDeload) {
+    if (isUiLoad) {
       str.devDependencies['unplugin-vue-components'] = '^28.5.0';
       str.devDependencies['unplugin-auto-import'] = '^19.2.0';
       str.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
