@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.2.0'));
+intro(generateGradientText('create-vtems快速创建 v2.2.1'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -446,7 +446,7 @@ function crApi(name) {
       showERRMsg: true,
       successCode: 200,
       responseType: 'json',
-    });
+    }${isTs ? ' as AppRequestConfig' : ''});
 
     https.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
 
@@ -486,7 +486,7 @@ function crApi(name) {
         if (code != config.successCode) {
           // 默认显示错误信息，除非显示设置为false
           if (config.showERRMsg) ${additionalTools.includes('element-plus') ? `ElMessage.error(msg)` : additionalTools.includes('@arco-design/web-vue') ? `Message.error(msg)` : additionalTools.includes('vant') ? `showToast(msg)` : 'alert(msg)'};
-          return Promise.reject(new Error(msg, { cause: resData }));
+          if (!config.returnResponse) return Promise.reject(new Error(msg, { cause: resData }));
         }
         // 根据returnResponse返回信息
         return config.returnResponse ? resData : data;
