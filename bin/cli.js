@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.2.1'));
+intro(generateGradientText('create-vtems快速创建 v2.2.2'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -626,8 +626,8 @@ function crPackage(name) {
   if (additionalTools.includes('element-plus')) {
     str.dependencies['element-plus'] = '^2.9.10';
     if (isUiLoad) {
-      str.devDependencies['unplugin-vue-components'] = '^28.5.0';
-      str.devDependencies['unplugin-auto-import'] = '^19.2.0';
+      str.devDependencies['unplugin-vue-components'] = '^28.7.0';
+      str.devDependencies['unplugin-auto-import'] = '^19.3.0';
     }
   }
   if (additionalTools.includes('@arco-design/web-vue')) {
@@ -640,19 +640,19 @@ function crPackage(name) {
   if (additionalTools.includes('vant')) {
     str.dependencies['vant'] = '^4.9.18';
     if (isUiLoad) {
-      str.devDependencies['unplugin-vue-components'] = '^28.5.0';
-      str.devDependencies['unplugin-auto-import'] = '^19.2.0';
+      str.devDependencies['unplugin-vue-components'] = '^28.7.0';
+      str.devDependencies['unplugin-auto-import'] = '^19.3.0';
       str.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
     }
   }
   if (additionalTools.includes('less')) str.devDependencies['less'] = '^4.3.0';
-  if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.89.0';
+  if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.89.2';
   if (additionalTools.includes('styl')) str.devDependencies['stylus'] = '^0.64.0';
   if (additionalTools.includes('tailwindCSS')) {
-    str.devDependencies['@tailwindcss/vite'] = '^4.1.7';
-    str.devDependencies['tailwindcss'] = '^4.1.7';
+    str.devDependencies['@tailwindcss/vite'] = '^4.1.10';
+    str.devDependencies['tailwindcss'] = '^4.1.10';
     if (additionalTools.includes('--prettier')) {
-      str.devDependencies['prettier-plugin-tailwindcss'] = '^0.6.11';
+      str.devDependencies['prettier-plugin-tailwindcss'] = '^0.6.13';
     }
   }
   if (additionalTools.includes('unoCSS')) {
