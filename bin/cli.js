@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.2.2'));
+intro(generateGradientText('create-vtems快速创建 v2.3.0'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -126,20 +126,24 @@ if (additionalTools.includes('--endToEnd')) {
   const idx = additionalTools.indexOf('--endToEnd');
   additionalTools[idx] = endToEnd;
 }
-if (additionalTools.includes('--eslint')) {
-  let isOxlint = await safePrompt(async () => {
-    return await confirm({
-      message: `是否引入 Oxlint 以加快检测？（试验阶段）`,
+if (additionalTools.includes('--eslint') || additionalTools.includes('--prettier')) {
+  const ox = await safePrompt(async () => {
+    return await multiselect({
+      message: '请选择要包含的试验特性： (↑/↓ 切换，空格选择，a 全选，回车确认)',
+      options: [
+        { value: '--oxlint', label: 'Oxlint (试验阶段)' },
+        { value: '--rolldown-vite', label: 'RollDownVite (试验阶段)' },
+      ],
+      required: false,
     });
   });
-  if (isOxlint) additionalTools.push('--eslint-with-oxlint');
+  additionalTools.push(...ox);
 }
 const runSpinner = spinner();
 runSpinner.start(generateGradientText('正在创建中'));
 // 重置项目目录
 if (isRestDir) {
-  rmSync(`./${projectName}`, { recursive: true, force: true });
-  mkdirSync(`./${projectName}`, { recursive: true });
+  additionalTools.push('--force');
 }
 // 拼接create-vue参数
 const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter((n) => n.startsWith('--'))];
@@ -174,6 +178,7 @@ child.stderr.on('data', (data) => {
 child.on('exit', (code) => {
   if (code !== 0) {
     console.log(new Error(`create-vue 失败，退出码 ${code}`));
+    process.exit(0);
   }
 });
 
