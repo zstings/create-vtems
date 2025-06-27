@@ -1,6 +1,6 @@
 {
   "name": "create-vtems",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "快速创建vue项目模板-基于create-vue",
   "main": "index.js",
   "type": "module",

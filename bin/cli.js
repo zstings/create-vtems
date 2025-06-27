@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { format } from 'prettier';
 import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } from '@clack/prompts';
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.3.0'));
+intro(generateGradientText('create-vtems快速创建 v2.3.1'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
@@ -146,7 +146,7 @@ if (isRestDir) {
   additionalTools.push('--force');
 }
 // 拼接create-vue参数
-const args = ['create-vue@latest', projectName, '--default', ...additionalTools.filter((n) => n.startsWith('--'))];
+const args = ['-y', 'create-vue@latest', projectName, '--default', ...additionalTools.filter((n) => n.startsWith('--'))];
 // 执行create-vue
 const child = spawn('npx', args, {
   shell: true,
