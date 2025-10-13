@@ -626,44 +626,44 @@ function crPackage(name) {
   const strPath = `./${name}/package.json`;
   let str = JSON.parse(readFileSync(strPath, 'utf-8'));
   if (isAxios) {
-    str.dependencies['axios'] = '^1.9.0';
+    str.dependencies['axios'] = '^1.12.2';
   }
   if (additionalTools.includes('element-plus')) {
-    str.dependencies['element-plus'] = '^2.9.10';
+    str.dependencies['element-plus'] = '^2.11.4';
     if (isUiLoad) {
-      str.devDependencies['unplugin-vue-components'] = '^28.7.0';
-      str.devDependencies['unplugin-auto-import'] = '^19.3.0';
+      str.devDependencies['unplugin-vue-components'] = '^29.1.0';
+      str.devDependencies['unplugin-auto-import'] = '^20.2.0';
     }
   }
   if (additionalTools.includes('@arco-design/web-vue')) {
     str.dependencies['@arco-design/web-vue'] = '^2.57.0';
     if (isUiLoad) {
-      str.devDependencies['@arco-plugins/vite-vue'] = '^1.4.5';
+      str.devDependencies['@arco-plugins/vite-vue'] = '^1.4.6';
       str.devDependencies['@arco-design/color'] = '^0.4.0';
     }
   }
   if (additionalTools.includes('vant')) {
-    str.dependencies['vant'] = '^4.9.18';
+    str.dependencies['vant'] = '^4.9.21';
     if (isUiLoad) {
-      str.devDependencies['unplugin-vue-components'] = '^28.7.0';
-      str.devDependencies['unplugin-auto-import'] = '^19.3.0';
+      str.devDependencies['unplugin-vue-components'] = '^29.1.0';
+      str.devDependencies['unplugin-auto-import'] = '^20.2.0';
       str.devDependencies['@vant/auto-import-resolver'] = '^1.3.0';
     }
   }
-  if (additionalTools.includes('less')) str.devDependencies['less'] = '^4.3.0';
-  if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.89.2';
+  if (additionalTools.includes('less')) str.devDependencies['less'] = '^4.4.2';
+  if (additionalTools.includes('sass')) str.devDependencies['sass-embedded'] = '^1.93.2';
   if (additionalTools.includes('styl')) str.devDependencies['stylus'] = '^0.64.0';
   if (additionalTools.includes('tailwindCSS')) {
-    str.devDependencies['@tailwindcss/vite'] = '^4.1.10';
-    str.devDependencies['tailwindcss'] = '^4.1.10';
+    str.devDependencies['@tailwindcss/vite'] = '^4.1.14';
+    str.devDependencies['tailwindcss'] = '^4.1.14';
     if (additionalTools.includes('--prettier')) {
-      str.devDependencies['prettier-plugin-tailwindcss'] = '^0.6.13';
+      str.devDependencies['prettier-plugin-tailwindcss'] = '^0.6.14';
     }
   }
   if (additionalTools.includes('unoCSS')) {
-    str.devDependencies['unocss'] = '^66.1.2';
+    str.devDependencies['unocss'] = '^66.5.3';
   }
-  str.dependencies['@zstings/utils'] = '^0.9.0';
+  str.dependencies['@zstings/utils'] = '^0.9.2';
   writeFileSync(strPath, JSON.stringify(str, null, 2), 'utf-8');
 }
 // Eslint 、 Prettierrc
