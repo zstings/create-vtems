@@ -4,7 +4,7 @@ import { isCancel, cancel, text, confirm, multiselect, select, intro, spinner } 
 import { existsSync, mkdirSync, readdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'child_process';
 
-intro(generateGradientText('create-vtems快速创建 v2.3.1'));
+intro(generateGradientText('create-vtems快速创建 v2.3.3'));
 
 async function safePrompt(promptFn) {
   const result = await promptFn();
