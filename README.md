@@ -64,9 +64,9 @@ $ npm run dev
 在终端中运行以下命令:
 
 ```sh
-npm create vtems
+npm create vtems@latest
 or
-pnpm create vtems
+pnpm create vtems@latest
 ```
 
 ## 致谢
